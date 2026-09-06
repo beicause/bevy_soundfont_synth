@@ -105,8 +105,14 @@ fn write_demo_midi(path: &Path) -> Result<(), String> {
     const TPB: u32 = 480; // ticks per quarter note
     // (note, octave) pairs, one quarter note each: C4 E4 G4 C5 · G4 C5 E5 G5
     let notes: &[(u8, u8)] = &[
-        (0, 4), (4, 4), (7, 4), (12, 4),
-        (7, 4), (12, 4), (16, 4), (19, 4),
+        (0, 4),
+        (4, 4),
+        (7, 4),
+        (12, 4),
+        (7, 4),
+        (12, 4),
+        (16, 4),
+        (19, 4),
     ];
 
     let mut track = Vec::new();
@@ -160,8 +166,14 @@ fn main() {
             } else {
                 let mut failed = false;
                 for (name, fetcher) in [
-                    ("TimGM6mb.sf2", fetch_timgm6mb as fn(&Path) -> Result<(), String>),
-                    ("FluidR3Mono_GM.sf3", fetch_fluid_sf3 as fn(&Path) -> Result<(), String>),
+                    (
+                        "TimGM6mb.sf2",
+                        fetch_timgm6mb as fn(&Path) -> Result<(), String>,
+                    ),
+                    (
+                        "FluidR3Mono_GM.sf3",
+                        fetch_fluid_sf3 as fn(&Path) -> Result<(), String>,
+                    ),
                 ] {
                     match fetcher(&assets_dir) {
                         Ok(()) => println!("ok: {name}"),

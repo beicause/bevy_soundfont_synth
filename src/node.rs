@@ -63,8 +63,8 @@ impl AudioNode for SynthNode {
     ) -> Result<impl AudioNodeProcessor, NodeError> {
         let font = Arc::clone(&self.font);
         let settings = synthesizer_settings(cx.stream_info.sample_rate.get(), self.polyphony);
-        let synth = Synthesizer::new(&font, &settings)
-            .map_err(|e| NodeError::from_boxed(Box::new(e)))?;
+        let synth =
+            Synthesizer::new(&font, &settings).map_err(|e| NodeError::from_boxed(Box::new(e)))?;
         Ok(MidiSynthProcessor {
             font,
             polyphony: self.polyphony,
@@ -151,7 +151,12 @@ impl MidiSynthProcessor {
 /// (command without the channel nibble; the fork's messages carry the channel
 /// in the low nibble of `status`).
 pub(crate) fn dispatch_message(synth: &mut Synthesizer, message: MidiMessage) {
-    if let MidiMessage::Normal { status, data1, data2 } = message {
+    if let MidiMessage::Normal {
+        status,
+        data1,
+        data2,
+    } = message
+    {
         synth.process_midi_message(
             (status & 0x0F) as i32,
             (status & 0xF0) as i32,

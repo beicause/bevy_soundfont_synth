@@ -3,7 +3,10 @@
 //! * `TimGM6mb.sf2` (SF2) plays requirement 1 (immediate `MidiEvent`s) and
 //!   requirement 2 (a timed event sequence).
 //! * `FluidR3Mono_GM.sf3` (SF3) plays requirement 3: `demo_generated.mid`
-//!   loops 3 times, then playback switches to `Only Time.mid` (looping).
+//!   finishes twice, then playback switches to `Only Time.mid` (looping). Each
+//!   loop of `Only Time.mid` prints the accumulated loop count
+//!   ([`MidiPlaybackRestarted`]); every finished play fires
+//!   [`MidiPlaybackFinished`].
 //!
 //! Prepare the assets first (they are git-ignored):
 //!
@@ -19,14 +22,15 @@
 use std::time::Duration;
 
 use bevy_app::{App, ScheduleRunnerPlugin, Startup, TaskPoolPlugin, Update};
-use bevy_asset::{AssetServer, AssetPlugin, Handle};
+use bevy_asset::{AssetPlugin, AssetServer, Handle};
+use bevy_ecs::observer::On;
 use bevy_ecs::prelude::*;
 use bevy_log::{LogPlugin, info, warn};
-use bevy_time::TimePlugin;
 use bevy_soundfont_synth::{
-    MidiEvent, MidiEventKind, MidiPlaybackEnded, MidiPlaybackSettings, MidiPlayer, MidiSoundFont,
-    SoundFontAsset, SoundFontSynthPlugin, TimedMidiEvent,
+    MidiEvent, MidiEventKind, MidiPlaybackFinished, MidiPlaybackRestarted, MidiPlaybackSettings,
+    MidiPlayer, MidiSoundFont, SoundFontAsset, SoundFontSynthPlugin, TimedMidiEvent,
 };
+use bevy_time::TimePlugin;
 
 fn main() {
     let asset_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("assets");
@@ -55,7 +59,8 @@ fn main() {
         .init_resource::<Demo>()
         .add_systems(Startup, setup)
         .add_systems(Update, demo_timeline)
-        .add_systems(Update, file_round_advance)
+        .add_observer(on_file_finished)
+        .add_observer(on_file_restarted)
         .run();
 }
 
@@ -100,7 +105,14 @@ fn demo_timeline(
         info!("demo: note-on C4 (immediate event, TimGM6mb)");
         if let Some(synth) = demo.synth_tim {
             commands.entity(synth).trigger(|e| {
-                MidiEvent::on(e, MidiEventKind::NoteOn { channel: 0, key: 60, velocity: 100 })
+                MidiEvent::on(
+                    e,
+                    MidiEventKind::NoteOn {
+                        channel: 0,
+                        key: 60,
+                        velocity: 100,
+                    },
+                )
             });
         }
     }
@@ -109,7 +121,13 @@ fn demo_timeline(
         info!("demo: note-off C4 (immediate event, TimGM6mb)");
         if let Some(synth) = demo.synth_tim {
             commands.entity(synth).trigger(|e| {
-                MidiEvent::on(e, MidiEventKind::NoteOff { channel: 0, key: 60 })
+                MidiEvent::on(
+                    e,
+                    MidiEventKind::NoteOff {
+                        channel: 0,
+                        key: 60,
+                    },
+                )
             });
         }
     }
@@ -148,7 +166,10 @@ fn demo_timeline(
     // (non-looping) to be repeated 3 times, then `Only Time.mid` (looping).
     if t >= 2.5 && !demo.file_started {
         demo.file_started = true;
-        info!("demo: playing MIDI file demo_generated.mid, round 1/3 (FluidR3Mono_GM.sf3)");
+        info!(
+            "demo: playing MIDI file demo_generated.mid, round 1/{} (FluidR3Mono_GM.sf3)",
+            DEMO_GENERATED_ROUNDS
+        );
         if let Some(synth) = demo.synth_sf3 {
             commands
                 .entity(synth)
@@ -158,35 +179,57 @@ fn demo_timeline(
     }
 }
 
-/// Count `MidiPlaybackEnded` on the SF3 file entity: replay `demo_generated.mid`
-/// until 3 rounds are done, then switch to `Only Time.mid` (looping).
-fn file_round_advance(
+/// Observe `MidiPlaybackFinished` on the SF3 file entity: replay
+/// `demo_generated.mid` until 2 rounds are done, then switch to
+/// `Only Time.mid` (looping). `loop_count` on the event is unused here (the
+/// demo rounds are non-looping plays).
+fn on_file_finished(
+    event: On<MidiPlaybackFinished>,
     mut commands: Commands,
     server: Res<AssetServer>,
-    mut ended: MessageReader<MidiPlaybackEnded>,
     mut demo: ResMut<Demo>,
 ) {
-    let Some(synth_sf3) = demo.synth_sf3 else { return };
+    let Some(synth_sf3) = demo.synth_sf3 else {
+        return;
+    };
 
-    for ended in ended.read() {
-        if ended.0 != synth_sf3 || !demo.file_started || demo.only_time_started {
-            continue;
-        }
-
-        demo.file_round += 1;
-        if demo.file_round < DEMO_GENERATED_ROUNDS {
-            info!("demo: demo_generated.mid round {}/{}", demo.file_round + 1, DEMO_GENERATED_ROUNDS);
-            commands
-                .entity(synth_sf3)
-                .insert(MidiPlayer::file(server.load("demo_generated.mid")));
-            commands.entity(synth_sf3).insert(MidiPlaybackSettings::ONCE);
-        } else {
-            demo.only_time_started = true;
-            info!("demo: switching to Only Time.mid (looping, FluidR3Mono_GM.sf3)");
-            commands
-                .entity(synth_sf3)
-                .insert(MidiPlayer::file(server.load("Only Time.mid")));
-            commands.entity(synth_sf3).insert(MidiPlaybackSettings::LOOP);
-        }
+    if event.entity != synth_sf3 || !demo.file_started || demo.only_time_started {
+        return;
     }
+
+    demo.file_round += 1;
+    if demo.file_round < DEMO_GENERATED_ROUNDS {
+        info!(
+            "demo: demo_generated.mid round {}/{}",
+            demo.file_round + 1,
+            DEMO_GENERATED_ROUNDS
+        );
+        commands
+            .entity(synth_sf3)
+            .insert(MidiPlayer::file(server.load("demo_generated.mid")));
+        commands
+            .entity(synth_sf3)
+            .insert(MidiPlaybackSettings::ONCE);
+    } else {
+        demo.only_time_started = true;
+        info!("demo: switching to Only Time.mid (looping, FluidR3Mono_GM.sf3)");
+        commands
+            .entity(synth_sf3)
+            .insert(MidiPlayer::file(server.load("Only Time.mid")));
+        commands
+            .entity(synth_sf3)
+            .insert(MidiPlaybackSettings::LOOP);
+    }
+}
+
+/// Observe `MidiPlaybackRestarted` on the SF3 file entity: each loop of
+/// `Only Time.mid` prints the accumulated loop count.
+fn on_file_restarted(event: On<MidiPlaybackRestarted>, demo: Res<Demo>) {
+    let Some(synth_sf3) = demo.synth_sf3 else {
+        return;
+    };
+    if event.entity != synth_sf3 || !demo.only_time_started {
+        return;
+    }
+    info!("demo: Only Time.mid looped {} times", event.loop_count);
 }

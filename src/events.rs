@@ -5,13 +5,16 @@
 //! - [`Message`]: queued data read by systems through `MessageWriter` /
 //!   `MessageReader`.
 //!
-//! Following that split:
-//! - **Immediate MIDI events** (requirement 1) are [`MidiEvent`] — an
-//!   [`EntityEvent`] triggered *on the target entity* via
-//!   `Commands::entity(..).trigger(..)`. The plugin registers an observer that
-//!   forwards them to the target entity's synthesizer node.
-//! - **Playback notifications** ([`MidiPlaybackEnded`], [`MidiStreamError`])
-//!   are [`Message`]s queued with `MessageWriter` and read by user systems.
+//! Following that split, everything targeted at a synth entity is an
+//! [`EntityEvent`] triggered *on that entity*:
+//! - **Immediate MIDI events** (requirement 1) are [`MidiEvent`] — triggered
+//!   by users via `Commands::entity(..).trigger(..)`.
+//! - **Playback notifications** ([`MidiPlaybackFinished`],
+//!   [`MidiPlaybackRestarted`]) are triggered by the engine *on the playing
+//!   entity*; users observe them with `On<..>` observers.
+//!
+//! The only [`Message`] left is [`MidiStreamError`] — a stream-level
+//! notification that belongs to no entity.
 
 use bevy_ecs::entity::Entity;
 use bevy_ecs::event::EntityEvent;
@@ -55,10 +58,60 @@ impl MidiEvent {
     }
 }
 
-/// Emitted once by the engine when a sequence or MIDI file finishes playing
-/// (non-looping playback only).
-#[derive(Message, Debug, Clone, Copy, PartialEq, Eq)]
-pub struct MidiPlaybackEnded(pub Entity);
+/// Emitted by the engine on the playing entity each time looping playback
+/// wraps back to the start of the sequence or MIDI file.
+///
+/// `loop_count` is the 1-based number of restarts so far: the first wrap fires
+/// with `loop_count == 1`, the second with `2`, and so on.
+///
+/// Observe it to react to loops (e.g. print the loop count):
+///
+/// ```
+/// # use bevy_ecs::prelude::*;
+/// # use bevy_ecs::observer::On;
+/// # use bevy_soundfont_synth::events::MidiPlaybackRestarted;
+/// fn on_restart(event: On<MidiPlaybackRestarted>) {
+///     println!("looped {} times", event.loop_count);
+/// }
+/// ```
+#[derive(EntityEvent, Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MidiPlaybackRestarted {
+    /// The entity whose playback restarted.
+    pub entity: Entity,
+    /// How many times looping playback has restarted since it began.
+    pub loop_count: u32,
+}
+
+impl MidiPlaybackRestarted {
+    /// Convenience constructor for `EntityCommands::trigger`.
+    pub fn on(entity: Entity, loop_count: u32) -> Self {
+        Self { entity, loop_count }
+    }
+}
+
+/// Emitted by the engine on the playing entity when a sequence or MIDI file
+/// finishes playing (non-looping playback only).
+///
+/// `loop_count` is the total number of loop restarts that occurred before the
+/// playback ended (0 for plain non-looping playback).
+///
+/// Observe it with an `On<MidiPlaybackFinished>` observer like
+/// [`MidiPlaybackRestarted`]; `MidiPlaybackMode::Despawn` / `Remove` already
+/// handle the entity life cycle, so observers are optional.
+#[derive(EntityEvent, Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MidiPlaybackFinished {
+    /// The entity whose playback finished.
+    pub entity: Entity,
+    /// Total loop restarts before the playback finished.
+    pub loop_count: u32,
+}
+
+impl MidiPlaybackFinished {
+    /// Convenience constructor for `EntityCommands::trigger`.
+    pub fn on(entity: Entity, loop_count: u32) -> Self {
+        Self { entity, loop_count }
+    }
+}
 
 /// Emitted when the audio stream reports an error (e.g. device unplugged).
 #[derive(Message, Debug, Clone, PartialEq, Eq)]

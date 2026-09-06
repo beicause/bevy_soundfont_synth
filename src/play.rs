@@ -102,7 +102,8 @@ pub struct SequenceSource(pub Vec<TimedMidiEvent>);
 
 impl MidiSource for SequenceSource {
     fn resolve(&self, _midis: &Assets<MidiFileAsset>) -> Result<Arc<MidiFile>, MidiResolveError> {
-        build_midi_file(self.0.clone()).map_err(|err| MidiResolveError::InvalidSequence(err.to_string()))
+        build_midi_file(self.0.clone())
+            .map_err(|err| MidiResolveError::InvalidSequence(err.to_string()))
     }
 }
 
@@ -294,16 +295,25 @@ mod tests {
     fn file_source_waiting_for_asset() {
         let assets = Assets::<MidiFileAsset>::default();
         let source = FileSource(Handle::default());
-        assert!(matches!(source.resolve(&assets), Err(MidiResolveError::AssetNotLoaded)));
+        assert!(matches!(
+            source.resolve(&assets),
+            Err(MidiResolveError::AssetNotLoaded)
+        ));
     }
 
     #[test]
     fn file_source_resolves_loaded_asset() {
         let mut assets = Assets::<MidiFileAsset>::default();
         let midi = Arc::new(
-            MidiFile::new_with_events([
-                (0.0, MidiEventKind::NoteOn { channel: 0, key: 60, velocity: 100 }.into_message()),
-            ])
+            MidiFile::new_with_events([(
+                0.0,
+                MidiEventKind::NoteOn {
+                    channel: 0,
+                    key: 60,
+                    velocity: 100,
+                }
+                .into_message(),
+            )])
             .unwrap(),
         );
         let handle: Handle<MidiFileAsset> = assets.add(MidiFileAsset { midi: midi.clone() });

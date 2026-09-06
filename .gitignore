@@ -1,5 +1,7 @@
 /target
 .cargo-home/
-rustysynth/target/
+# Local rustysynth fork: dev-only convenience, not part of the repo.
+# (Cargo.toml references it with a path dependency; install it separately.)
+rustysynth/
 assets/*.sf2
 assets/*.sf3

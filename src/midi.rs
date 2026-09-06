@@ -10,16 +10,9 @@ use rustysynth_ext::{MidiFile, MidiFileError, MidiMessage};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MidiEventKind {
     /// Note On. A velocity of 0 is treated as a Note Off (standard behavior).
-    NoteOn {
-        channel: u8,
-        key: u8,
-        velocity: u8,
-    },
+    NoteOn { channel: u8, key: u8, velocity: u8 },
     /// Note Off.
-    NoteOff {
-        channel: u8,
-        key: u8,
-    },
+    NoteOff { channel: u8, key: u8 },
     /// Control Change.
     ControlChange {
         channel: u8,
@@ -27,15 +20,9 @@ pub enum MidiEventKind {
         value: u8,
     },
     /// Program Change (instrument selection).
-    ProgramChange {
-        channel: u8,
-        program: u8,
-    },
+    ProgramChange { channel: u8, program: u8 },
     /// Pitch Bend, in the range -8192..=8191.
-    PitchBend {
-        channel: u8,
-        value: i16,
-    },
+    PitchBend { channel: u8, value: i16 },
 }
 
 impl MidiEventKind {
@@ -86,7 +73,11 @@ impl MidiEventKind {
     /// messages (`TempoChange`, `LoopStart`, `LoopEnd`, `EndOfTrack`).
     pub fn from_message(message: MidiMessage) -> Option<Self> {
         match message {
-            MidiMessage::Normal { status, data1, data2 } => {
+            MidiMessage::Normal {
+                status,
+                data1,
+                data2,
+            } => {
                 let channel = status & 0x0F;
                 match status & 0xF0 {
                     0x80 => Some(MidiEventKind::NoteOff {
@@ -133,9 +124,7 @@ pub struct TimedMidiEvent {
 /// Times must be non-decreasing; `MidiFile::new_with_events` validates this and
 /// returns [`MidiFileError::InvalidEventList`] otherwise. Events at the same
 /// time keep their relative order (stable sort).
-pub fn build_midi_file(
-    mut events: Vec<TimedMidiEvent>,
-) -> Result<Arc<MidiFile>, MidiFileError> {
+pub fn build_midi_file(mut events: Vec<TimedMidiEvent>) -> Result<Arc<MidiFile>, MidiFileError> {
     events.sort_by(|a, b| a.seconds.total_cmp(&b.seconds));
     let messages = events
         .into_iter()
@@ -155,7 +144,10 @@ mod tests {
                 key: 60,
                 velocity: 100,
             },
-            MidiEventKind::NoteOff { channel: 3, key: 60 },
+            MidiEventKind::NoteOff {
+                channel: 3,
+                key: 60,
+            },
             MidiEventKind::ControlChange {
                 channel: 1,
                 controller: 7,
@@ -186,7 +178,10 @@ mod tests {
 
     #[test]
     fn non_channel_messages_do_not_decode() {
-        assert_eq!(MidiEventKind::from_message(MidiMessage::TempoChange { bytes: [1, 2, 3] }), None);
+        assert_eq!(
+            MidiEventKind::from_message(MidiMessage::TempoChange { bytes: [1, 2, 3] }),
+            None
+        );
         assert_eq!(MidiEventKind::from_message(MidiMessage::EndOfTrack), None);
     }
 
@@ -227,10 +222,22 @@ mod tests {
     fn expedite_rejects_non_decreasing_without_sort() {
         // Direct new_with_events on sorted input works...
         let ok = MidiFile::new_with_events([
-            (0.0, MidiEventKind::NoteOn { channel: 0, key: 60, velocity: 100 }.into_message()),
+            (
+                0.0,
+                MidiEventKind::NoteOn {
+                    channel: 0,
+                    key: 60,
+                    velocity: 100,
+                }
+                .into_message(),
+            ),
             (
                 0.5,
-                MidiEventKind::NoteOff { channel: 0, key: 60 }.into_message(),
+                MidiEventKind::NoteOff {
+                    channel: 0,
+                    key: 60,
+                }
+                .into_message(),
             ),
         ]);
         assert!(ok.is_ok());
@@ -239,9 +246,21 @@ mod tests {
         let bad = MidiFile::new_with_events([
             (
                 0.5,
-                MidiEventKind::NoteOff { channel: 0, key: 60 }.into_message(),
+                MidiEventKind::NoteOff {
+                    channel: 0,
+                    key: 60,
+                }
+                .into_message(),
             ),
-            (0.0, MidiEventKind::NoteOn { channel: 0, key: 60, velocity: 100 }.into_message()),
+            (
+                0.0,
+                MidiEventKind::NoteOn {
+                    channel: 0,
+                    key: 60,
+                    velocity: 100,
+                }
+                .into_message(),
+            ),
         ]);
         assert!(bad.is_err());
     }

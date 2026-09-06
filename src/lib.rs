@@ -45,7 +45,7 @@ pub mod playback;
 
 pub use assets::{MidiFileAsset, MidiFileLoader, SoundFontAsset, SoundFontLoader};
 pub use engine::{MidiError, MidiSynthEngine, SoundFontSynthPlugin};
-pub use events::{MidiEvent, MidiPlaybackEnded, MidiStreamError};
+pub use events::{MidiEvent, MidiPlaybackFinished, MidiPlaybackRestarted, MidiStreamError};
 pub use midi::{MidiEventKind, TimedMidiEvent};
 pub use node::MidiSynthNode;
 pub use play::{

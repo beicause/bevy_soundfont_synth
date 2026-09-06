@@ -17,9 +17,9 @@ use std::sync::Arc;
 
 use bevy_app::{App, Last, Plugin, Update};
 use bevy_asset::{AssetApp, Assets};
-use bevy_ecs::prelude::*;
 use bevy_ecs::message::MessageWriter;
 use bevy_ecs::observer::On;
+use bevy_ecs::prelude::*;
 use bevy_log::{error, info, warn};
 use firewheel::{
     FirewheelConfig, FirewheelContext,
@@ -31,7 +31,7 @@ use firewheel::{
 use rustysynth_ext::{MidiMessage, SoundFont};
 
 use crate::assets::{MidiFileAsset, MidiFileLoader, SoundFontAsset, SoundFontLoader};
-use crate::events::{MidiEvent, MidiPlaybackEnded, MidiStreamError};
+use crate::events::{MidiEvent, MidiPlaybackFinished, MidiPlaybackRestarted, MidiStreamError};
 use crate::node::{MidiSynthNode, SynthMsg, SynthNode, at_seconds, register_node_cleanup_hook};
 use crate::play::{
     MidiPlaybackMode, MidiPlaybackSettings, MidiPlayer, MidiResolveError, MidiSoundFont,
@@ -277,8 +277,9 @@ impl Plugin for SoundFontSynthPlugin {
             .init_asset_loader::<SoundFontLoader>()
             .init_asset_loader::<MidiFileLoader>();
 
-        // Messages (playback notifications).
-        app.add_message::<MidiPlaybackEnded>();
+        // Playback notifications are entity events triggered on the playing
+        // entity (no registration needed); only the stream-level error is a
+        // Message.
         app.add_message::<MidiStreamError>();
 
         // NonSend audio context.
@@ -333,7 +334,11 @@ fn live_events(mut engine: NonSendMut<MidiSynthEngine>, nodes: Query<&MidiSynthN
 type SynthNodes<'w, 's> = Query<
     'w,
     's,
-    (Entity, &'static MidiSoundFont, Option<&'static MidiSynthNode>),
+    (
+        Entity,
+        &'static MidiSoundFont,
+        Option<&'static MidiSynthNode>,
+    ),
     Or<(
         Added<MidiSoundFont>,
         Changed<MidiSoundFont>,
@@ -447,10 +452,11 @@ fn cleanup_stale_states(
 }
 
 /// Poll every active playback against the audio clock and schedule the due
-/// MIDI events individually through firewheel's `scheduled_events` API.
+/// MIDI events individually through firewheel's `scheduled_events` API. Loop
+/// wraps trigger [`MidiPlaybackRestarted`] on the entity; completion triggers
+/// [`MidiPlaybackFinished`].
 fn poll_playbacks(
     mut commands: Commands,
-    mut ended: MessageWriter<MidiPlaybackEnded>,
     mut playbacks: Query<(
         Entity,
         &MidiSynthNode,
@@ -477,7 +483,8 @@ fn poll_playbacks(
         }
 
         // Schedule every event that has become due since the last poll.
-        for due in state.state.poll(now) {
+        let result = state.state.poll(now);
+        for due in result.due {
             engine.enqueue(
                 node.0,
                 Some(at_seconds(due.audio_instant_seconds)),
@@ -485,9 +492,20 @@ fn poll_playbacks(
             );
         }
 
+        // Fire one restart event per loop wrap that happened this poll.
+        let first_count = result.loop_count - result.restarts;
+        for i in 0..result.restarts {
+            let count = first_count + i + 1;
+            commands
+                .entity(entity)
+                .trigger(|e| MidiPlaybackRestarted::on(e, count));
+        }
+
         if state.state.is_done() && !state.ended_notified {
             state.ended_notified = true;
-            ended.write(MidiPlaybackEnded(entity));
+            commands
+                .entity(entity)
+                .trigger(|e| MidiPlaybackFinished::on(e, state.state.loop_count()));
             match settings.mode {
                 MidiPlaybackMode::Once | MidiPlaybackMode::Loop => {}
                 MidiPlaybackMode::Despawn => {

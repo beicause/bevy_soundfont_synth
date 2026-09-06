@@ -87,9 +87,12 @@ fn main() {
 
 Control during playback by mutating `MidiPlaybackSettings`
 (`paused`, `speed`, `volume`); removing `MidiPlayer` (or despawning the entity)
-stops playback. `MidiPlaybackEnded(Entity)` is emitted (a `Message`) when a
-non-looping playback finishes; `MidiPlaybackMode::Despawn` / `Remove` handle the
-entity automatically.
+stops playback. Playback notifications are *entity events* triggered on the
+playing entity and observed with `On<..>` observers:
+[`MidiPlaybackFinished`] fires when a non-looping playback finishes (carrying
+the total `loop_count`), [`MidiPlaybackRestarted`] fires on every loop wrap
+(carrying the 1-based `loop_count`). `MidiPlaybackMode::Despawn` / `Remove`
+handle the entity automatically.
 
 ## SoundFont banks
 
@@ -126,8 +129,9 @@ Bevy world                                        NonSend MidiSynthEngine
 ## Modules
 
 - `assets` — `SoundFontAsset`, `MidiFileAsset` + asset loaders.
-- `events` — `MidiEvent` (EntityEvent), `MidiPlaybackEnded`/`MidiStreamError`
-  (Messages).
+- `events` — `MidiEvent` (EntityEvent), `MidiPlaybackFinished` /
+  `MidiPlaybackRestarted` (EntityEvents, triggered by the engine on the playing
+  entity), `MidiStreamError` (Message).
 - `midi` — `MidiEventKind`, `TimedMidiEvent` and conversions to/from the fork's
   `MidiMessage`.
 - `play` — components: `MidiSoundFont`, `MidiPlayer`, the `MidiSource` trait

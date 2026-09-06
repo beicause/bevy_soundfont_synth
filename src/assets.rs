@@ -70,14 +70,16 @@ impl AssetLoader for SoundFontLoader {
     ) -> impl ConditionalSendFuture<Output = Result<Self::Asset, Self::Error>> {
         async move {
             let mut bytes = Vec::new();
-            reader
-                .read_to_end(&mut bytes)
-                .await
-                .map_err(|e| BevyError::new(Severity::Error, format!("failed to read soundfont: {e}")))?;
+            reader.read_to_end(&mut bytes).await.map_err(|e| {
+                BevyError::new(Severity::Error, format!("failed to read soundfont: {e}"))
+            })?;
 
             let mut cursor = Cursor::new(bytes);
             let font = SoundFont::new(&mut cursor).map_err(|e| {
-                BevyError::new(Severity::Error, format!("invalid SoundFont (.sf2/.sf3): {e}"))
+                BevyError::new(
+                    Severity::Error,
+                    format!("invalid SoundFont (.sf2/.sf3): {e}"),
+                )
             })?;
 
             Ok(SoundFontAsset {
@@ -108,10 +110,9 @@ impl AssetLoader for MidiFileLoader {
     ) -> impl ConditionalSendFuture<Output = Result<Self::Asset, Self::Error>> {
         async move {
             let mut bytes = Vec::new();
-            reader
-                .read_to_end(&mut bytes)
-                .await
-                .map_err(|e| BevyError::new(Severity::Error, format!("failed to read midi file: {e}")))?;
+            reader.read_to_end(&mut bytes).await.map_err(|e| {
+                BevyError::new(Severity::Error, format!("failed to read midi file: {e}"))
+            })?;
 
             let mut cursor = Cursor::new(bytes);
             let midi = MidiFile::new(&mut cursor).map_err(|e| {
@@ -139,8 +140,9 @@ mod tests {
     /// parsing fixtures (no downloads needed).
     fn fork_sample(name: &str) -> Vec<u8> {
         let path = format!("{}/rustysynth/samples/{name}", env!("CARGO_MANIFEST_DIR"));
-        std::fs::read(&path)
-            .unwrap_or_else(|e| panic!("missing fork sample {path}: {e} (is the rustysynth subtree present?)"))
+        std::fs::read(&path).unwrap_or_else(|e| {
+            panic!("missing fork sample {path}: {e} (is the rustysynth subtree present?)")
+        })
     }
 
     /// Minimal format-0 SMF: one C4 quarter note at 120 BPM.
