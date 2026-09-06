@@ -175,7 +175,7 @@ fn file_round_advance(
 
         demo.file_round += 1;
         if demo.file_round < DEMO_GENERATED_ROUNDS {
-            info!("demo: demo_generated.mid round {}/3", demo.file_round + 1);
+            info!("demo: demo_generated.mid round {}/{}", demo.file_round + 1, DEMO_GENERATED_ROUNDS);
             commands
                 .entity(synth_sf3)
                 .insert(MidiPlayer::file(server.load("demo_generated.mid")));
