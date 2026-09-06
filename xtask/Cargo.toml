@@ -9,9 +9,9 @@ publish = false
 name = "xtask"
 path = "src/main.rs"
 
-[lints]
-workspace = true
-
 [dependencies]
 # Same HTTP client the upstream rustysynth fork uses for its sample fetcher.
 ureq = "3.4.0"
+
+[lints]
+workspace = true
