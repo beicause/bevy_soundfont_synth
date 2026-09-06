@@ -1,0 +1,5 @@
+/target
+.cargo-home/
+rustysynth/target/
+assets/*.sf2
+assets/*.sf3

@@ -1,0 +1,17 @@
+[package]
+name = "xtask"
+version = "0.1.0"
+edition = "2024"
+description = "Development tasks for bevy_soundfont_synth: download the SoundFont banks used by the demo/tests"
+publish = false
+
+[[bin]]
+name = "xtask"
+path = "src/main.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+# Same HTTP client the upstream rustysynth fork uses for its sample fetcher.
+ureq = "3.4.0"

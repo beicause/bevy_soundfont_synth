@@ -1,0 +1,3 @@
+[alias]
+# `cargo xtask fetch-fonts` downloads the (git-ignored) SoundFont banks.
+xtask = "run --package xtask --"
