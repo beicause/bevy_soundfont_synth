@@ -1,24 +1,16 @@
-[workspace]
-members = ["xtask"]
-# Edition 2024 defaults to resolver "3"; pin it explicitly.
-resolver = "3"
-
-[workspace.lints.clippy]
-allow_attributes = "warn"
-allow_attributes_without_reason = "warn"
-
 [package]
 name = "bevy_soundfont_synth"
 version = "0.1.0"
 edition = "2024"
 
-[lints]
-workspace = true
+[workspace]
+# Edition 2024 defaults to resolver "3"; pin it explicitly.
+resolver = "3"
+members = ["xtask"]
 
-[features]
-# Opt-in: names the systems in panic messages (forwards to bevy_ecs/debug).
-# Enable with e.g. `cargo run --example demo --features debug`.
-debug = ["bevy_ecs/debug"]
+[workspace.lints.clippy]
+allow_attributes = "warn"
+allow_attributes_without_reason = "warn"
 
 [dependencies]
 bevy_app = { version = "0.19.1", default-features = false, features = ["std"] }
@@ -28,14 +20,27 @@ bevy_log = { version = "0.19.1", default-features = false }
 bevy_math = { version = "0.19.1", default-features = false, features = ["std"] }
 bevy_platform = { version = "0.19.1", default-features = false, features = ["alloc", "std"] }
 bevy_reflect = { version = "0.19.1", default-features = false }
-bevy_time = { version = "0.19.1", default-features = false, features = ["std"] }
 bevy_tasks = { version = "0.19.1", default-features = false, features = ["async_executor", "futures-lite"] }
+bevy_time = { version = "0.19.1", default-features = false, features = ["std"] }
 
 firewheel = { version = "0.14.0", default-features = false, features = ["cpal", "scheduled_events", "std"] }
-rustysynth-ext = { path = "rustysynth/rustysynth", features = ["sf3"] }
+rustysynth-ext = { package = "rustysynth-ext", git = "https://github.com/beicause/rustysynth", branch = "main", features = ["sf3"] }
 
-[profile.test]
-opt-level = 1
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+firewheel = { version = "0.14.0", features = ["wasm-bindgen"] }
+
+[target.'cfg(target_os = "android")'.dependencies]
+android-activity = "0.6.1"
+
+[features]
+android-game-activity = ["android-activity/game-activity"]
+android-native-activity = ["android-activity/native-activity"]
+
+[lints]
+workspace = true
 
 [profile.dev.package."*"]
+opt-level = 1
+
+[profile.test]
 opt-level = 1

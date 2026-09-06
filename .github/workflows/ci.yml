@@ -3,9 +3,9 @@ name: Rust CI
 on:
   workflow_dispatch:
   push:
-    branches: ["main"]
+    branches: ["master"]
   pull_request:
-    branches: ["main"]
+    branches: ["master"]
   merge_group:
 
 concurrency:
@@ -14,6 +14,7 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
+  AUDIO_LIBS: libasound2-dev libpulse-dev libudev-dev libwayland-dev libxkbcommon-dev cmake
   ANDROID_NDK_VERSION: 29.0.14206865
   CACHE_SUFFIX: f # cache busting
 
@@ -32,7 +33,7 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Install tombi
-        uses: tombi-toml/setup-tombi@v1.2.4
+        uses: tombi-toml/setup-tombi@v1.4
 
       - name: Check for tombi
         run: tombi lint --error-on-warnings; tombi format --check --diff
@@ -50,6 +51,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7.0.1
+
+      - name: Install Linux dependencies
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: sudo apt-get update; sudo apt-get install -y --no-install-recommends ${{ env.AUDIO_LIBS }}
 
       - name: Disable debug symbols
         shell: bash
@@ -104,6 +109,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
 
+      - name: Install Linux dependencies
+        run: sudo apt-get update; sudo apt-get install -y --no-install-recommends ${{ env.AUDIO_LIBS }}
+
       - name: Disable debug symbols
         shell: bash
         run: |
@@ -131,10 +139,10 @@ jobs:
         run: cargo clippy --workspace --all-targets --no-default-features -- -Dwarnings
 
       - name: Clippy all features
-        run: cargo clippy --target wasm32-unknown-unknown -p rustysynth-ext --all-targets --all-features -- -Dwarnings
+        run: cargo clippy --target wasm32-unknown-unknown -p bevy_soundfont_synth --all-targets --all-features -- -Dwarnings
 
       - name: Build wasm
-        run: cargo build --target wasm32-unknown-unknown -p rustysynth-ext --all-targets --all-features
+        run: cargo build --target wasm32-unknown-unknown -p bevy_soundfont_synth --all-targets --all-features
 
   build-android:
     needs: lint
@@ -182,4 +190,4 @@ jobs:
           export ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/${{env.ANDROID_NDK_VERSION}}
           && export ANDROID_NDK_ROOT=${ANDROID_NDK_HOME}
           && cargo ndk-env -t arm64-v8a
-          && cargo ndk -t arm64-v8a -P 26 build -p rustysynth-ext --all-features
+          && cargo ndk -t arm64-v8a -P 26 build -p bevy_soundfont_synth --features android-game-activity

@@ -5,3 +5,5 @@
 rustysynth/
 assets/*.sf2
 assets/*.sf3
+
+*.log
