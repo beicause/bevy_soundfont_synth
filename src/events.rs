@@ -1,7 +1,8 @@
 //! Entity events and messages for the synth plugin.
 //!
 //! Bevy 0.19 splits the old "event" API into two:
-//! - [`Event`] + [`EntityEvent`]: observer-driven triggers (no queue).
+//! - [`Event`](bevy_ecs::event::Event) + [`EntityEvent`]: observer-driven
+//!   triggers (no queue).
 //! - [`Message`]: queued data read by systems through `MessageWriter` /
 //!   `MessageReader`.
 //!

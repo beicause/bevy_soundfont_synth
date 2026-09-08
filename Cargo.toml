@@ -33,7 +33,10 @@ firewheel = { version = "0.14.0", default-features = false, features = ["cpal", 
 rustysynth-ext = { package = "rustysynth-ext", git = "https://github.com/beicause/rustysynth", branch = "main", features = ["sf3"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-firewheel = { version = "0.14.0", features = ["wasm-bindgen"] }
+bevy_app = { version = "0.19.1", default-features = false, features = ["web"] }
+bevy_platform = { version = "0.19.1", default-features = false, features = ["web"] }
+bevy_reflect = { version = "0.19.1", default-features = false, features = ["web"] }
+firewheel = { version = "0.14.0", default-features = false, features = ["wasm-bindgen"] }
 
 [target.'cfg(target_os = "android")'.dependencies]
 android-activity = "0.6.1"

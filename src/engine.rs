@@ -5,7 +5,8 @@
 //!   one per entity that has a [`MidiSoundFont`], and a component hook tears it
 //!   down when the font is replaced or the entity despawns.
 //! * The SoundFont is *per entity* — nothing here is global.
-//! * Sequences and MIDI files are unified behind [`MidiSource`] → `Arc<MidiFile>`.
+//! * Sequences and MIDI files are unified behind
+//!   [`MidiSource`](crate::play::MidiSource) → `Arc<MidiFile>`.
 //!   Playback is polled every frame on the main thread and each due MIDI
 //!   message is *scheduled* individually through firewheel's `scheduled_events`
 //!   API, so notes land sample-accurately on the audio thread.
@@ -384,8 +385,10 @@ fn synth_node_sync(
 /// keep retrying entities whose source could not be resolved yet (e.g. a file
 /// asset that is still loading).
 ///
-/// Every [`MidiSource`] implementation (built-in [`FileSource`],
-/// [`SequenceSource`], or user-defined) resolves to the same `Arc<MidiFile>`
+/// Every [`MidiSource`](crate::play::MidiSource) implementation (built-in
+/// [`FileSource`](crate::play::FileSource),
+/// [`SequenceSource`](crate::play::SequenceSource), or user-defined) resolves
+/// to the same `Arc<MidiFile>`
 /// and then uses the exact same playback state machine.
 type Players<'w, 's> = Query<
     'w,

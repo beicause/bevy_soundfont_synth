@@ -7,12 +7,14 @@
 //!
 //! 1. **Immediate MIDI events** — an [`EntityEvent`](events::MidiEvent)
 //!    triggered *on* a synth entity (an entity with a
-//!    [`MidiSoundFont`](play::MidiSoundFont)):
+//!    [`MidiSoundFont`]):
 //!    ```ignore
-//!    commands.entity(synth).trigger(|e| MidiEvent::on(e, MidiEventKind::NoteOn { … }));
+//!    commands.entity(synth).trigger(|e| {
+//!        MidiEvent::on(e, MidiEventKind::NoteOn { channel: 0, key: 60, velocity: 100 })
+//!    });
 //!    ```
 //! 2. **A series of MIDI events** — [`MidiPlayer(MidiSource::sequence(..))`](play::MidiPlayer)
-//!    with timed [`TimedMidiEvent`](midi::TimedMidiEvent)s.
+//!    with timed [`TimedMidiEvent`]s.
 //! 3. **A MIDI file** — [`MidiPlayer(MidiSource::file(handle))`](play::MidiPlayer).
 //!
 //! Requirements 2 and 3 are unified: both resolve to a shared `Arc<MidiFile>`
@@ -27,7 +29,7 @@
 //!
 //! ```ignore
 //! use bevy::prelude::*;
-//! use bevy_soundfont_synth::{SoundFontSynthPlugin, MidiSoundFont, MidiPlayer, …};
+//! use bevy_soundfont_synth::{MidiPlayer, MidiSoundFont, SoundFontSynthPlugin};
 //!
 //! App::new()
 //!     .add_plugins((DefaultPlugins, SoundFontSynthPlugin))

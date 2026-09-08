@@ -702,15 +702,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f079e83a288787bcd14a6aea84cee5c87a67c5a3e660c30f557a3d24761b3527"
 
 [[package]]
-name = "cmake"
-version = "0.1.58"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0f78a02292a74a88ac736019ab962ece0bc380e3f977bf72e376c5d78ff0678"
-dependencies = [
- "cc",
-]
-
-[[package]]
 name = "combine"
 version = "4.6.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1005,8 +996,6 @@ dependencies = [
  "firewheel-cpal",
  "firewheel-graph",
  "firewheel-nodes",
- "firewheel-rtaudio",
- "firewheel-symphonium",
  "thiserror 2.0.20",
 ]
 
@@ -1051,7 +1040,6 @@ dependencies = [
  "firewheel-graph",
  "fixed-resample",
  "thiserror 2.0.20",
- "tracing",
 ]
 
 [[package]]
@@ -1071,7 +1059,6 @@ dependencies = [
  "smallvec",
  "thiserror 2.0.20",
  "thunderdome",
- "tracing",
  "triple_buffer",
  "wasm-bindgen",
 ]
@@ -1100,35 +1087,7 @@ dependencies = [
  "bevy_reflect",
  "firewheel-core",
  "num-traits",
- "smallvec",
  "thiserror 2.0.20",
- "triple_buffer",
-]
-
-[[package]]
-name = "firewheel-rtaudio"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f6c6e3ee75d88ad0dda1be16f849cee579dda70b69f2c3003f0a81eb5e455060"
-dependencies = [
- "audioadapter-buffers",
- "bevy_platform",
- "firewheel-core",
- "firewheel-graph",
- "rtaudio",
- "thiserror 2.0.20",
- "tracing",
-]
-
-[[package]]
-name = "firewheel-symphonium"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2188ec2f3039775663fda4cdef93a83b3feebca49a0d6c0c18097e81cdf06a75"
-dependencies = [
- "bevy_platform",
- "firewheel-core",
- "symphonium",
 ]
 
 [[package]]
@@ -1571,15 +1530,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "num-complex"
-version = "0.4.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "73f88a1307638156682bada9d7604135552957b7818057dcef22705b4d509495"
-dependencies = [
- "num-traits",
-]
-
-[[package]]
 name = "num-derive"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1868,12 +1818,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "regex-lite"
-version = "0.1.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cab834c73d247e67f4fae452806d17d3c7501756d98c8808d7c9c7aa7d18f973"
-
-[[package]]
 name = "regex-syntax"
 version = "0.8.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1916,28 +1860,6 @@ dependencies = [
  "serde_derive",
  "typeid",
  "unicode-ident",
-]
-
-[[package]]
-name = "rtaudio"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7384a8837efe4abea0e53f3887b5072cbbd1ee95c298cff4fbd7a9f3ff23a48b"
-dependencies = [
- "bitflags",
- "rtaudio-sys",
- "thiserror 2.0.20",
- "tracing",
-]
-
-[[package]]
-name = "rtaudio-sys"
-version = "0.3.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "931ec9a72c48e96e8e2f9868aef1d4e452723354779d01159f7399647427b57b"
-dependencies = [
- "cmake",
- "pkg-config",
 ]
 
 [[package]]
@@ -2152,54 +2074,6 @@ name = "subtle"
 version = "2.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
-
-[[package]]
-name = "symphonia"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7edef6a96b696d4e0cab5ee9ebb7ca155ed95f30a6b45bbb8b97d2727f02424"
-dependencies = [
- "lazy_static",
- "symphonia-core",
- "symphonia-metadata",
-]
-
-[[package]]
-name = "symphonia-core"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01c412864d599d4750d0c3d684d7e093ec05e5309681ef5252cc1096a437f6e0"
-dependencies = [
- "bitflags",
- "bytemuck",
- "lazy_static",
- "log",
- "num-complex",
- "smallvec",
-]
-
-[[package]]
-name = "symphonia-metadata"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83713a97705d77bdef7cdbc0768fd6e5a54e4cd7e48d60a806ae85639e2c87c6"
-dependencies = [
- "lazy_static",
- "log",
- "regex-lite",
- "smallvec",
- "symphonia-core",
-]
-
-[[package]]
-name = "symphonium"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "711aa6a3000f772529a4876b63d8f35477d68905f79b0970ab4e94964e130cbd"
-dependencies = [
- "symphonia",
- "tracing",
-]
 
 [[package]]
 name = "syn"

@@ -1,6 +1,6 @@
 //! The firewheel audio node and its ECS component.
 //!
-//! * [`SynthNode`] — the firewheel `AudioNode` constructor. Deliberately dumb:
+//! * `SynthNode` — the firewheel `AudioNode` constructor. Deliberately dumb:
 //!   all scheduling happens on the main thread (see `crate::playback`), MIDI
 //!   messages arrive as firewheel custom events (immediate or scheduled) and
 //!   this node only applies them and renders the block.
@@ -37,7 +37,8 @@ pub(crate) enum SynthMsg {
     Midi(MidiMessage),
     /// Reset the synthesizer (all notes, controllers, effects).
     Reset,
-    /// Set master volume in firewheel [`Volume`] units (0 dB = unity).
+    /// Set master volume in firewheel [`Volume`](firewheel::Volume) units
+    /// (0 dB = unity).
     SetMasterVolume(firewheel::Volume),
 }
 

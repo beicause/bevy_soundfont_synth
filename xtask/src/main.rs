@@ -5,7 +5,7 @@
 //!   (the files themselves are git-ignored; see the root `.gitignore`).
 //! * `generate-demo-midi` — writes the demo MIDI file `assets/demo_generated.mid`.
 //!   Sources are the same verified files used by the upstream rustysynth fork
-//!   (https://github.com/beicause/rustysynth).
+//!   (<https://github.com/beicause/rustysynth>).
 
 use std::fs;
 use std::io::Read;

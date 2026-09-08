@@ -52,8 +52,8 @@ use crate::midi::{TimedMidiEvent, build_midi_file};
 /// global).
 ///
 /// Spawn an entity with this component to give it a live synthesizer node; MIDI
-/// events triggered on that entity (see
-/// [`crate::events::MidiEvent`](crate::events::MidiEvent)) are routed to it,
+/// events triggered on that entity (see [`MidiEvent`](crate::events::MidiEvent))
+/// are routed to it,
 /// and [`MidiPlayer`] sources play through it.
 ///
 /// ```
