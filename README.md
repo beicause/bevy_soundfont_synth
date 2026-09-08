@@ -9,7 +9,7 @@ Three ways to produce audio, all unified under one playback scheduler:
 
 | # | What | API |
 |---|------|-----|
-| 1 | Trigger a single MIDI message immediately | [`MidiEvent`] `EntityEvent`, triggered **on** a synth entity |
+| 1 | Trigger a single MIDI message (immediately or delayed) | [`TimedMidiEvent`] `EntityEvent` (`seconds` delay, 0 = immediate), triggered **on** a synth entity |
 | 2 | Queue a series of timed MIDI events | `MidiPlayer(MidiSource::sequence(..))` component |
 | 3 | Play a MIDI file asset | `MidiPlayer(MidiSource::file(handle))` component |
 
@@ -36,8 +36,8 @@ Three ways to produce audio, all unified under one playback scheduler:
 ```rust,ignore
 use bevy::prelude::*;
 use bevy_soundfont_synth::{
-    MidiEvent, MidiEventKind, MidiPlaybackSettings, MidiPlayer, MidiSoundFont,
-    MidiSource, SoundFontSynthPlugin, TimedMidiEvent,
+    MidiEntityCommandsExt, MidiEventKind, MidiPlaybackSettings, MidiPlayer, MidiSoundFont,
+    MidiSource, SequenceMidiEvent, SoundFontSynthPlugin, TimedMidiEvent,
 };
 
 fn setup(mut commands: Commands, server: Res<AssetServer>) {
@@ -47,20 +47,21 @@ fn setup(mut commands: Commands, server: Res<AssetServer>) {
         .spawn(MidiSoundFont(server.load("fonts/FluidR3Mono_GM.sf2")))
         .id();
 
-    // 1) Immediate MIDI events, triggered on the synth entity:
+    // 1) MIDI events triggered on the synth entity (0 = immediate,
+    //    positive = sample-accurate delay on the audio clock):
     commands.entity(synth).trigger(|e| {
-        MidiEvent::on(e, MidiEventKind::NoteOn { channel: 0, key: 60, velocity: 100 })
+        TimedMidiEvent::new(e, 0.0, MidiEventKind::NoteOn { channel: 0, key: 60, velocity: 100 })
     });
-    // ... later:
+    // ... a note-off half a second later:
     commands.entity(synth).trigger(|e| {
-        MidiEvent::on(e, MidiEventKind::NoteOff { channel: 0, key: 60 })
+        TimedMidiEvent::new(e, 0.5, MidiEventKind::NoteOff { channel: 0, key: 60 })
     });
 
     // 2) A series of timed MIDI events:
     let events = (0..4).flat_map(|i| {
         [
-            TimedMidiEvent { seconds: i as f64 * 0.15, kind: MidiEventKind::NoteOn { channel: 0, key: 60 + i * 4, velocity: 90 } },
-            TimedMidiEvent { seconds: i as f64 * 0.15 + 0.12, kind: MidiEventKind::NoteOff { channel: 0, key: 60 + i * 4 } },
+            SequenceMidiEvent { seconds: i as f64 * 0.15, kind: MidiEventKind::NoteOn { channel: 0, key: 60 + i * 4, velocity: 90 } },
+            SequenceMidiEvent { seconds: i as f64 * 0.15 + 0.12, kind: MidiEventKind::NoteOff { channel: 0, key: 60 + i * 4 } },
         ]
     }).collect();
     commands.spawn((
@@ -83,6 +84,18 @@ fn main() {
         .add_systems(Startup, setup)
         .run();
 }
+```
+
+Requirement-1 (immediate) events can also be triggered chainably on any entity
+holding a `MidiSoundFont` via `MidiEntityCommandsExt` — including the timed
+variant, which schedules a message at a relative delay sample-accurately on the
+audio clock (no `MidiPlayer` involved):
+
+```rust,ignore
+commands
+    .entity(synth)
+    .trigger_midi_event(MidiEventKind::NoteOn { channel: 0, key: 60, velocity: 100 })
+    .trigger_timed_midi_event(0.5, MidiEventKind::NoteOff { channel: 0, key: 60 });
 ```
 
 Control during playback by mutating `MidiPlaybackSettings`
@@ -133,7 +146,7 @@ assembles the deployable static site (glue + wasm + `examples/web/index.html`
 
 ```
 Bevy world                                        NonSend MidiSynthEngine
-  MidiEvent (EntityEvent, triggered on entity) ──▶ observer → live buffer
+  TimedMidiEvent (EntityEvent, triggered on entity) ──▶ observer → live buffer
   MidiSoundFont + MidiPlayer + MidiPlaybackSettings
     │  synth_node_sync: build firewheel node      cx.add_node(SynthNode)
     │  player_sources_sync: MidiSource::resolve → Arc<MidiFile> (shared)
@@ -151,10 +164,12 @@ Bevy world                                        NonSend MidiSynthEngine
 ## Modules
 
 - `assets` — `SoundFontAsset`, `MidiFileAsset` + asset loaders.
-- `events` — `MidiEvent` (EntityEvent), `MidiPlaybackFinished` /
+- `events` — `TimedMidiEvent` (EntityEvent: a message targeted at an entity,
+  firing after a relative `seconds` delay — 0 = immediate), the
+  `MidiEntityCommandsExt` chainable trigger helpers, `MidiPlaybackFinished` /
   `MidiPlaybackRestarted` (EntityEvents, triggered by the engine on the playing
   entity), `MidiStreamError` (Message).
-- `midi` — `MidiEventKind`, `TimedMidiEvent` and conversions to/from the fork's
+- `midi` — `MidiEventKind`, `SequenceMidiEvent` and conversions to/from the fork's
   `MidiMessage`.
 - `play` — components: `MidiSoundFont`, `MidiPlayer`, the `MidiSource` trait
   (`FileSource`, `SequenceSource`), `MidiPlaybackSettings`/`MidiPlaybackMode`.

@@ -31,7 +31,7 @@ use firewheel::{
 use rustysynth_ext::{MidiMessage, SoundFont};
 
 use crate::assets::{MidiFileAsset, MidiFileLoader, SoundFontAsset, SoundFontLoader};
-use crate::events::{MidiEvent, MidiPlaybackFinished, MidiPlaybackRestarted, MidiStreamError};
+use crate::events::{MidiPlaybackFinished, MidiPlaybackRestarted, MidiStreamError, TimedMidiEvent};
 use crate::node::{MidiSynthNode, SynthMsg, SynthNode, at_seconds, register_node_cleanup_hook};
 use crate::play::{
     MidiPlaybackMode, MidiPlaybackSettings, MidiPlayer, MidiResolveError, MidiSoundFont,
@@ -81,8 +81,9 @@ pub struct MidiSynthEngine {
     polyphony: usize,
     /// Commands to flush to the audio thread on the next tick.
     pending: Vec<(NodeID, Option<EventInstant>, SynthMsg)>,
-    /// Immediate MIDI events buffered by the observer.
-    live: Vec<(Entity, MidiMessage)>,
+    /// MIDI events buffered by the observer. The second element is the
+    /// absolute audio-clock instant to fire at.
+    live: Vec<(Entity, f64, MidiMessage)>,
     /// Set once the stream fails to start (or later reports an error).
     error: Option<String>,
     /// Whether the stream failure has already been logged.
@@ -245,7 +246,7 @@ impl MidiSynthEngine {
 /// Bevy plugin for MIDI/SoundFont playback through firewheel.
 ///
 /// Registers the asset loaders, the `NonSend` [`MidiSynthEngine`], the
-/// observer for immediate [`MidiEvent`]s, and the playback systems.
+/// observer for [`TimedMidiEvent`]s, and the playback systems.
 ///
 /// The firewheel graph configuration is user-configurable:
 ///
@@ -285,8 +286,8 @@ impl Plugin for SoundFontSynthPlugin {
         // NonSend audio context.
         app.insert_non_send(MidiSynthEngine::with_config(self.config));
 
-        // Immediate midi events (requirement 1): route via an observer.
-        app.add_observer(midi_event_observer);
+        // MIDI events (requirement 1): route via an observer.
+        app.add_observer(timed_midi_event_observer);
 
         // Node teardown hook.
         register_node_cleanup_hook(app);
@@ -307,21 +308,28 @@ impl Plugin for SoundFontSynthPlugin {
     }
 }
 
-// --- Observer (requirement 1: immediate MIDI events) ------------------------
+// --- Observer (requirement 1: MIDI events) -----------------------------------
 
-/// Forward every triggered [`MidiEvent`] into the engine's live buffer; a
-/// system routes them to the target entity's node.
-fn midi_event_observer(event: On<MidiEvent>, mut engine: NonSendMut<MidiSynthEngine>) {
-    engine.live.push((event.entity, event.kind.into_message()));
+/// Forward every triggered [`TimedMidiEvent`] into the engine's live buffer,
+/// anchored to the current audio clock: the message fires `seconds` later
+/// (`seconds == 0` as soon as possible), sample-accurately. When the stream
+/// has not started yet the delay is anchored to the stream start (audio clock
+/// zero).
+fn timed_midi_event_observer(event: On<TimedMidiEvent>, mut engine: NonSendMut<MidiSynthEngine>) {
+    let now = engine.audio_clock_seconds().unwrap_or(0.0);
+    let at = now + event.seconds.max(0.0);
+    engine
+        .live
+        .push((event.entity, at, event.kind.into_message()));
 }
 
 fn live_events(mut engine: NonSendMut<MidiSynthEngine>, nodes: Query<&MidiSynthNode>) {
     let live = std::mem::take(&mut engine.live);
-    for (entity, message) in live {
+    for (entity, at, message) in live {
         match nodes.get(entity) {
-            Ok(node) => engine.enqueue(node.0, None, SynthMsg::Midi(message)),
+            Ok(node) => engine.enqueue(node.0, Some(at_seconds(at)), SynthMsg::Midi(message)),
             Err(_) => warn!(
-                "bevy_soundfont_synth: MidiEvent targeted entity without a MidiSoundFont; event dropped"
+                "bevy_soundfont_synth: MIDI event targeted an entity without a loaded MidiSoundFont; event dropped"
             ),
         }
     }
@@ -500,14 +508,14 @@ fn poll_playbacks(
             let count = first_count + i + 1;
             commands
                 .entity(entity)
-                .trigger(|e| MidiPlaybackRestarted::on(e, count));
+                .trigger(|e| MidiPlaybackRestarted::new(e, count));
         }
 
         if state.state.is_done() && !state.ended_notified {
             state.ended_notified = true;
             commands
                 .entity(entity)
-                .trigger(|e| MidiPlaybackFinished::on(e, state.state.loop_count()));
+                .trigger(|e| MidiPlaybackFinished::new(e, state.state.loop_count()));
             match settings.mode {
                 MidiPlaybackMode::Once | MidiPlaybackMode::Loop => {}
                 MidiPlaybackMode::Despawn => {
@@ -532,5 +540,135 @@ fn engine_tick(
     engine.tick();
     if let Some(err) = engine.poll_stream_error() {
         stream_errors.write(MidiStreamError(err));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::events::TimedMidiEvent;
+    use crate::midi::MidiEventKind;
+    use bevy_asset::Handle;
+    use firewheel::clock::{EventInstant, InstantSeconds};
+
+    fn note_on(key: u8) -> MidiEventKind {
+        MidiEventKind::NoteOn {
+            channel: 0,
+            key,
+            velocity: 100,
+        }
+    }
+
+    /// Test world with the engine (no audio stream: the audio clock reads 0)
+    /// and the requirement-1 observer installed.
+    fn test_world() -> World {
+        let mut world = World::new();
+        world.insert_non_send(MidiSynthEngine::default());
+        world.add_observer(timed_midi_event_observer);
+        world
+    }
+
+    /// Run `live_events` once against the world.
+    fn run_live_events(world: &mut World) {
+        let mut schedule = Schedule::default();
+        schedule.add_systems(live_events);
+        schedule.run(world);
+    }
+
+    fn engine(world: &World) -> &MidiSynthEngine {
+        world.non_send::<MidiSynthEngine>()
+    }
+
+    #[test]
+    fn timed_event_anchors_delay_to_audio_clock() {
+        let mut world = test_world();
+        let entity = world.spawn_empty().id();
+
+        // No stream yet, so the anchor is the audio clock zero.
+        world
+            .commands()
+            .entity(entity)
+            .trigger(|entity| TimedMidiEvent::new(entity, 1.5, note_on(60)));
+        world.flush();
+
+        assert_eq!(engine(&world).live.len(), 1);
+        assert_eq!(engine(&world).live[0].0, entity);
+        assert_eq!(engine(&world).live[0].1, 1.5);
+    }
+
+    #[test]
+    fn immediate_event_is_anchored_to_now() {
+        let mut world = test_world();
+        let entity = world.spawn_empty().id();
+
+        world
+            .commands()
+            .entity(entity)
+            .trigger(|entity| TimedMidiEvent::new(entity, 0.0, note_on(60)));
+        world.flush();
+
+        // Zero delay: due at the current audio clock (0.0 without a stream).
+        assert_eq!(engine(&world).live[0].1, 0.0);
+    }
+
+    #[test]
+    fn timed_event_with_negative_delay_fires_immediately() {
+        let mut world = test_world();
+        let entity = world.spawn_empty().id();
+
+        world
+            .commands()
+            .entity(entity)
+            .trigger(|entity| TimedMidiEvent::new(entity, -3.0, note_on(60)));
+        world.flush();
+
+        // `now` (0.0) + clamped delay (0.0): due instantly, not in the past.
+        assert_eq!(engine(&world).live[0].1, 0.0);
+    }
+
+    #[test]
+    fn live_events_routes_with_scheduled_instant() {
+        let mut world = test_world();
+        let entity = world
+            .spawn((
+                MidiSoundFont(Handle::default()),
+                MidiSynthNode(NodeID::DANGLING),
+            ))
+            .id();
+
+        world
+            .commands()
+            .entity(entity)
+            .trigger(|entity| TimedMidiEvent::new(entity, 1.5, note_on(60)));
+        world.flush();
+        run_live_events(&mut world);
+
+        let engine = engine(&world);
+        assert!(engine.live.is_empty(), "buffer drained");
+        assert_eq!(engine.pending.len(), 1);
+        let (id, time, msg) = &engine.pending[0];
+        assert_eq!(*id, NodeID::DANGLING);
+        assert_eq!(
+            *time,
+            Some(EventInstant::AtClockSeconds(InstantSeconds(1.5)))
+        );
+        assert!(matches!(msg, SynthMsg::Midi(_)));
+    }
+
+    #[test]
+    fn live_events_drops_events_without_a_font() {
+        let mut world = test_world();
+        let entity = world.spawn_empty().id();
+
+        world
+            .commands()
+            .entity(entity)
+            .trigger(|entity| TimedMidiEvent::new(entity, 0.0, note_on(60)));
+        world.flush();
+        run_live_events(&mut world);
+
+        let engine = engine(&world);
+        assert!(engine.live.is_empty());
+        assert!(engine.pending.is_empty());
     }
 }

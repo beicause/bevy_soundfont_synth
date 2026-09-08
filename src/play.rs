@@ -6,7 +6,7 @@
 //! same scheduling state machine. Two built-in implementations:
 //!
 //! * [`FileSource`] — a [`MidiFileAsset`] (requirement 3), resolved lazily.
-//! * [`SequenceSource`] — a custom list of timed [`TimedMidiEvent`]s
+//! * [`SequenceSource`] — a custom list of [`SequenceMidiEvent`]s
 //!   (requirement 2), converted eagerly.
 //!
 //! [`MidiPlayer`] is the spawned component holding a `Box<dyn MidiSource>` —
@@ -46,14 +46,14 @@ use firewheel::Volume;
 use rustysynth_ext::MidiFile;
 
 use crate::assets::{MidiFileAsset, SoundFontAsset};
-use crate::midi::{TimedMidiEvent, build_midi_file};
+use crate::midi::{SequenceMidiEvent, build_midi_file};
 
 /// Declares the SoundFont bank this entity's synthesizer uses (per entity, not
 /// global).
 ///
 /// Spawn an entity with this component to give it a live synthesizer node; MIDI
-/// events triggered on that entity (see [`MidiEvent`](crate::events::MidiEvent))
-/// are routed to it,
+/// events triggered on that entity (see
+/// [`TimedMidiEvent`](crate::events::TimedMidiEvent)) are routed to it,
 /// and [`MidiPlayer`] sources play through it.
 ///
 /// ```
@@ -94,11 +94,11 @@ impl MidiSource for FileSource {
     }
 }
 
-/// A [`MidiSource`] backed by a custom list of timed MIDI events
+/// A [`MidiSource`] backed by a custom list of [`SequenceMidiEvent`]s
 /// (requirement 2). Converted to `Arc<MidiFile>` when the player is added;
 /// `MidiFile::new_with_events` requires non-decreasing times.
 #[derive(Clone, Debug, Default)]
-pub struct SequenceSource(pub Vec<TimedMidiEvent>);
+pub struct SequenceSource(pub Vec<SequenceMidiEvent>);
 
 impl MidiSource for SequenceSource {
     fn resolve(&self, _midis: &Assets<MidiFileAsset>) -> Result<Arc<MidiFile>, MidiResolveError> {
@@ -132,8 +132,8 @@ impl MidiPlayer {
         Self(Box::new(FileSource(handle)))
     }
 
-    /// A player for a list of timed MIDI events.
-    pub fn sequence(events: Vec<TimedMidiEvent>) -> Self {
+    /// A player for a list of [`SequenceMidiEvent`]s.
+    pub fn sequence(events: Vec<SequenceMidiEvent>) -> Self {
         Self(Box::new(SequenceSource(events)))
     }
 
@@ -262,8 +262,10 @@ mod tests {
     use super::*;
     use crate::midi::MidiEventKind;
 
-    fn timed(seconds: f64, key: u8) -> TimedMidiEvent {
-        TimedMidiEvent {
+    /// A `SequenceMidiEvent` holding a note-on at `seconds` (within the
+    /// sequence).
+    fn note_on_at(seconds: f64, key: u8) -> SequenceMidiEvent {
+        SequenceMidiEvent {
             seconds,
             kind: MidiEventKind::NoteOn {
                 channel: 0,
@@ -276,7 +278,11 @@ mod tests {
     #[test]
     fn sequence_source_resolves_to_arc_file() {
         let assets = Assets::<MidiFileAsset>::default();
-        let source = SequenceSource(vec![timed(0.0, 60), timed(0.5, 62), timed(1.0, 64)]);
+        let source = SequenceSource(vec![
+            note_on_at(0.0, 60),
+            note_on_at(0.5, 62),
+            note_on_at(1.0, 64),
+        ]);
         let midi = source.resolve(&assets).expect("sequence resolves");
         assert_eq!(midi.get_times().len(), 3);
         assert!((midi.get_length() - 1.0).abs() < 1e-9);
@@ -285,7 +291,7 @@ mod tests {
     #[test]
     fn sequence_source_sorts_input() {
         let assets = Assets::<MidiFileAsset>::default();
-        let source = SequenceSource(vec![timed(1.0, 60), timed(0.5, 62)]);
+        let source = SequenceSource(vec![note_on_at(1.0, 60), note_on_at(0.5, 62)]);
         let midi = source.resolve(&assets).expect("sorted internally");
         assert_eq!(midi.get_times()[0], 0.5);
         assert_eq!(midi.get_times()[1], 1.0);
@@ -328,7 +334,7 @@ mod tests {
         // is what the `MidiPlayer` component stores.
         let assets = Assets::<MidiFileAsset>::default();
         let players: Vec<Box<dyn MidiSource>> = vec![
-            Box::new(SequenceSource(vec![timed(0.0, 60)])),
+            Box::new(SequenceSource(vec![note_on_at(0.0, 60)])),
             Box::new(FileSource(Handle::default())),
         ];
         assert!(players[0].resolve(&assets).is_ok());

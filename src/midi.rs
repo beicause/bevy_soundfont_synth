@@ -5,8 +5,8 @@ use std::sync::Arc;
 
 use rustysynth_ext::{MidiFile, MidiFileError, MidiMessage};
 
-/// A named MIDI message, used for immediate `MidiEvent`s and for
-/// `MidiSequencePlayer` event lists.
+/// A named MIDI message, used for `TimedMidiEvent`s and `SequenceMidiEvent`
+/// sequence lists.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MidiEventKind {
     /// Note On. A velocity of 0 is treated as a Note Off (standard behavior).
@@ -110,10 +110,15 @@ impl MidiEventKind {
     }
 }
 
-/// A MIDI event with an absolute time offset in seconds (relative to the start
-/// of its sequence).
+/// A MIDI event with a time in seconds, counted **from the start of its
+/// sequence** (absolute within the sequence, not a delay from "now").
+///
+/// Used as the item type of [`SequenceSource`](crate::play::SequenceSource)
+/// (`MidiPlayer::sequence(..)`). For scheduling messages relative to the
+/// current audio clock on a synth entity, use
+/// [`TimedMidiEvent`](crate::events::TimedMidiEvent) instead.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct TimedMidiEvent {
+pub struct SequenceMidiEvent {
     /// Seconds from the start of the sequence.
     pub seconds: f64,
     pub kind: MidiEventKind,
@@ -124,7 +129,7 @@ pub struct TimedMidiEvent {
 /// Times must be non-decreasing; `MidiFile::new_with_events` validates this and
 /// returns [`MidiFileError::InvalidEventList`] otherwise. Events at the same
 /// time keep their relative order (stable sort).
-pub fn build_midi_file(mut events: Vec<TimedMidiEvent>) -> Result<Arc<MidiFile>, MidiFileError> {
+pub fn build_midi_file(mut events: Vec<SequenceMidiEvent>) -> Result<Arc<MidiFile>, MidiFileError> {
     events.sort_by(|a, b| a.seconds.total_cmp(&b.seconds));
     let messages = events
         .into_iter()
@@ -191,14 +196,14 @@ mod tests {
         // new_with_events rejects unsorted input, so unsorted is an error,
         // while the builder's sort guarantees success.
         let bad = build_midi_file(vec![
-            TimedMidiEvent {
+            SequenceMidiEvent {
                 seconds: 1.0,
                 kind: MidiEventKind::NoteOff {
                     channel: 0,
                     key: 60,
                 },
             },
-            TimedMidiEvent {
+            SequenceMidiEvent {
                 seconds: 0.0,
                 kind: MidiEventKind::NoteOn {
                     channel: 0,

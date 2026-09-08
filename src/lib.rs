@@ -5,16 +5,26 @@
 //!
 //! Three ways to produce audio:
 //!
-//! 1. **Immediate MIDI events** — an [`EntityEvent`](events::MidiEvent)
-//!    triggered *on* a synth entity (an entity with a
-//!    [`MidiSoundFont`]):
+//! 1. **MIDI events** — a [`TimedMidiEvent`]
+//!    [`EntityEvent`](bevy_ecs::event::EntityEvent) triggered *on* a synth
+//!    entity (an entity with a [`MidiSoundFont`]); `seconds` is a relative
+//!    delay from the audio clock at trigger time (0 = immediate),
+//!    sample-accurate:
 //!    ```ignore
 //!    commands.entity(synth).trigger(|e| {
-//!        MidiEvent::on(e, MidiEventKind::NoteOn { channel: 0, key: 60, velocity: 100 })
+//!        TimedMidiEvent::new(e, 0.0, MidiEventKind::NoteOn { channel: 0, key: 60, velocity: 100 })
 //!    });
 //!    ```
+//!    or chainably via [`MidiEntityCommandsExt`]:
+//!    ```ignore
+//!    commands
+//!        .entity(synth)
+//!        .trigger_midi_event(MidiEventKind::NoteOn { channel: 0, key: 60, velocity: 100 })
+//!        .trigger_timed_midi_event(0.5, MidiEventKind::NoteOff { channel: 0, key: 60 });
+//!    ```
 //! 2. **A series of MIDI events** — [`MidiPlayer(MidiSource::sequence(..))`](play::MidiPlayer)
-//!    with timed [`TimedMidiEvent`]s.
+//!    with timed [`midi::SequenceMidiEvent`]s (`seconds` from the start of the
+//!    sequence).
 //! 3. **A MIDI file** — [`MidiPlayer(MidiSource::file(handle))`](play::MidiPlayer).
 //!
 //! Requirements 2 and 3 are unified: both resolve to a shared `Arc<MidiFile>`
@@ -47,8 +57,11 @@ pub mod playback;
 
 pub use assets::{MidiFileAsset, MidiFileLoader, SoundFontAsset, SoundFontLoader};
 pub use engine::{MidiError, MidiSynthEngine, SoundFontSynthPlugin};
-pub use events::{MidiEvent, MidiPlaybackFinished, MidiPlaybackRestarted, MidiStreamError};
-pub use midi::{MidiEventKind, TimedMidiEvent};
+pub use events::{
+    MidiEntityCommandsExt, MidiPlaybackFinished, MidiPlaybackRestarted, MidiStreamError,
+    TimedMidiEvent,
+};
+pub use midi::{MidiEventKind, SequenceMidiEvent};
 pub use node::MidiSynthNode;
 pub use play::{
     FileSource, MidiPlaybackMode, MidiPlaybackSettings, MidiPlayer, MidiResolveError,

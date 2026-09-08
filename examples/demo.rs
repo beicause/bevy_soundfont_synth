@@ -1,7 +1,8 @@
 //! Manual smoke test for all three use cases, split across two synth entities
 //! with different SoundFonts:
-//! * `TimGM6mb.sf2` (SF2) plays requirement 1 (immediate `MidiEvent`s) and
-//!   requirement 2 (a timed event sequence).
+//! * `TimGM6mb.sf2` (SF2) plays requirement 1 (immediate and timed
+//!   `TimedMidiEvent`s: a note-on plus a note-off 0.5 s later) and requirement
+//!   2 (a timed event sequence).
 //! * `FluidR3Mono_GM.sf3` (SF3) plays requirement 3: `demo_generated.mid`
 //!   finishes twice, then playback switches to `Only Time.mid` (looping). Each
 //!   loop of `Only Time.mid` prints the accumulated loop count
@@ -45,8 +46,9 @@ use bevy_ecs::prelude::*;
 use bevy_log::warn;
 use bevy_log::{LogPlugin, info};
 use bevy_soundfont_synth::{
-    MidiEvent, MidiEventKind, MidiPlaybackFinished, MidiPlaybackRestarted, MidiPlaybackSettings,
-    MidiPlayer, MidiSoundFont, SoundFontAsset, SoundFontSynthPlugin, TimedMidiEvent,
+    MidiEntityCommandsExt, MidiEventKind, MidiPlaybackFinished, MidiPlaybackRestarted,
+    MidiPlaybackSettings, MidiPlayer, MidiSoundFont, SequenceMidiEvent, SoundFontAsset,
+    SoundFontSynthPlugin,
 };
 use bevy_time::TimePlugin;
 
@@ -101,7 +103,6 @@ struct Demo {
     /// SF3 synth entity (FluidR3Mono): req 3 MIDI file playback.
     synth_sf3: Option<Entity>,
     note_on_sent: bool,
-    note_off_sent: bool,
     sequence_started: bool,
     /// Whether the first `demo_generated.mid` play was started.
     file_started: bool,
@@ -129,36 +130,27 @@ fn demo_timeline(
 ) {
     let t = time.elapsed_secs();
 
-    // Req 1: immediate MIDI events on the TimGM6mb entity.
+    // Req 1: immediate MIDI events on the TimGM6mb entity. The matching
+    // note-off is scheduled 0.5 s ahead with the timed event variant — no
+    // polling needed (it fires sample-accurately on the audio clock).
     if t >= 0.5 && !demo.note_on_sent {
         demo.note_on_sent = true;
-        info!("demo: note-on C4 (immediate event, TimGM6mb)");
+        info!("demo: note-on C4 (immediate event, TimGM6mb) + note-off after 0.5 s (timed event)");
         if let Some(synth) = demo.synth_tim {
-            commands.entity(synth).trigger(|e| {
-                MidiEvent::on(
-                    e,
-                    MidiEventKind::NoteOn {
-                        channel: 0,
-                        key: 60,
-                        velocity: 100,
-                    },
-                )
-            });
-        }
-    }
-    if t >= 1.0 && !demo.note_off_sent {
-        demo.note_off_sent = true;
-        info!("demo: note-off C4 (immediate event, TimGM6mb)");
-        if let Some(synth) = demo.synth_tim {
-            commands.entity(synth).trigger(|e| {
-                MidiEvent::on(
-                    e,
+            commands
+                .entity(synth)
+                .trigger_midi_event(MidiEventKind::NoteOn {
+                    channel: 0,
+                    key: 60,
+                    velocity: 100,
+                })
+                .trigger_timed_midi_event(
+                    0.5,
                     MidiEventKind::NoteOff {
                         channel: 0,
                         key: 60,
                     },
-                )
-            });
+                );
         }
     }
 
@@ -172,7 +164,7 @@ fn demo_timeline(
                 .enumerate()
                 .flat_map(|(i, &key)| {
                     [
-                        TimedMidiEvent {
+                        SequenceMidiEvent {
                             seconds: i as f64 * 0.15,
                             kind: MidiEventKind::NoteOn {
                                 channel: 0,
@@ -180,7 +172,7 @@ fn demo_timeline(
                                 velocity: 90,
                             },
                         },
-                        TimedMidiEvent {
+                        SequenceMidiEvent {
                             seconds: i as f64 * 0.15 + 0.12,
                             kind: MidiEventKind::NoteOff { channel: 0, key },
                         },

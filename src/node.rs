@@ -8,7 +8,7 @@
 //!   node id on an entity. It is inserted by the engine when an entity gets a
 //!   [`MidiSoundFont`](crate::play::MidiSoundFont), removed automatically when
 //!   the font is replaced or the entity despawns (via a component hook), and
-//!   used as the routing target for immediate [`MidiEvent`](crate::events::MidiEvent)s.
+//!   used as the routing target for [`TimedMidiEvent`](crate::events::TimedMidiEvent)s.
 
 use std::sync::Arc;
 
