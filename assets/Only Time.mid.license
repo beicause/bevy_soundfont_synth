@@ -1,0 +1,33 @@
+Files: Only Time.mid
+MD5:   6ea6fd529684dc310defce56ea7b05c9
+
+Source:
+  The Lakh MIDI Dataset v0.1 (LMD), by Colin Raffel
+  https://colinraffel.com/projects/lmd/
+
+License:
+  Creative Commons Attribution 4.0 International (CC-BY 4.0)
+  https://creativecommons.org/licenses/by/4.0/
+
+Attribution (required by CC-BY 4.0 — please keep this notice when
+redistributing this file):
+
+  The Lakh MIDI Dataset, https://colinraffel.com/projects/lmd/
+
+  Colin Raffel. "Learning-Based Methods for Comparing Sequences, with
+  Applications to Audio-to-MIDI Alignment and Matching". PhD Thesis, 2016.
+  http://colinraffel.com/publications/thesis.pdf
+
+Notes:
+
+* This file is checked into the `bevy_soundfont_synth` repository solely as
+  demo data for the `demo` example. It is NOT covered by the
+  `MIT OR Apache-2.0` dual license that applies to the rest of this
+  repository's source code; only the terms above govern this file.
+
+* The Lakh MIDI Dataset did not transcribe its MIDI files itself; they were
+  scraped from publicly available sources and per-file authorship is not
+  attributed. This file is a MIDI transcription of the song "Only Time".
+  All rights in the underlying musical composition and in any related
+  recordings remain with their respective copyright holders; the CC-BY 4.0
+  license above applies to the MIDI file as distributed in the dataset.

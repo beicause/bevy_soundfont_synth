@@ -2,11 +2,17 @@
 name = "bevy_soundfont_synth"
 version = "0.1.0"
 edition = "2024"
+repository.workspace = true
+license.workspace = true
 
 [workspace]
 # Edition 2024 defaults to resolver "3"; pin it explicitly.
 resolver = "3"
 members = ["xtask"]
+
+[workspace.package]
+repository = "https://github.com/beicause/bevy_soundfont_synth"
+license = "MIT OR Apache-2.0"
 
 [workspace.lints.clippy]
 allow_attributes = "warn"

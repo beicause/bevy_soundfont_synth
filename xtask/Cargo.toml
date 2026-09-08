@@ -3,6 +3,8 @@ name = "xtask"
 version = "0.1.0"
 edition = "2024"
 description = "Development tasks for bevy_soundfont_synth: download the SoundFont banks used by the demo/tests"
+repository.workspace = true
+license.workspace = true
 publish = false
 
 [[bin]]

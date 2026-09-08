@@ -8,12 +8,13 @@
 //!   ([`MidiPlaybackRestarted`]); every finished play fires
 //!   [`MidiPlaybackFinished`].
 //!
-//! Prepare the assets first (they are git-ignored):
+//! Prepare the assets first (the font banks are git-ignored):
 //!
 //! ```text
 //! cargo xtask fetch-fonts        # assets/TimGM6mb.sf2 + assets/FluidR3Mono_GM.sf3
 //! cargo xtask generate-demo-midi # assets/demo_generated.mid
-//! # optionally drop "Only Time.mid" into assets/
+//! # "Only Time.mid" ships in assets/ (from the Lakh MIDI Dataset, CC-BY 4.0 —
+//! # see "assets/Only Time.mid.license" for the required attribution)
 //! ```
 //!
 //! Then run: `cargo run --example demo` (requires an audio device). Volume

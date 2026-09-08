@@ -96,8 +96,8 @@ handle the entity automatically.
 
 ## SoundFont banks
 
-The `.sf2`/`.sf3`/`.mid` files in `assets/` are git-ignored: banks are large
-and not redistributed here. Fetch the demo font with the bundled xtask:
+The `.sf2`/`.sf3` banks in `assets/` are git-ignored: they are large and not
+redistributed here. Fetch the demo fonts with the bundled xtask:
 
 ```sh
 cargo xtask fetch-fonts   # downloads assets/TimGM6mb.sf2
@@ -156,3 +156,17 @@ Bevy world                                        NonSend MidiSynthEngine
 - Requires a host app with `bevy_asset::AssetPlugin` (part of
   `DefaultPlugins`); the demo uses `ScheduleRunnerPlugin` + `TaskPoolPlugin` +
   `AssetPlugin` + `TimePlugin`.
+
+## License
+
+Except where noted (below and/or in individual files), all code in this repository is dual-licensed under either:
+
+* MIT License ([LICENSE-MIT](LICENSE-MIT) or [http://opensource.org/licenses/MIT](http://opensource.org/licenses/MIT))
+* Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0))
+
+at your option.
+
+Exception:
+- `assets/Only Time.mid` comes from the
+  [Lakh MIDI Dataset v0.1](https://colinraffel.com/projects/lmd/).
+  Its attribution notice lives in `assets/Only Time.mid.license`.
