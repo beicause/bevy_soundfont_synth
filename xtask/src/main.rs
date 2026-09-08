@@ -72,10 +72,8 @@ const TIMGM6MB_MIRRORS: &[&str] = &[
 ];
 
 /// Mirrors for FluidR3Mono_GM.sf3, shipped by the upstream rustysynth fork.
-const FLUID_SF3_MIRRORS: &[&str] = &[
-    "https://raw.githubusercontent.com/beicause/rustysynth/main/samples/FluidR3Mono_GM.sf3",
-    "https://github.com/beicause/rustysynth/raw/main/samples/FluidR3Mono_GM.sf3",
-];
+const FLUID_SF3_MIRRORS: &[&str] =
+    &["https://raw.githubusercontent.com/beicause/beicause/main/assets/FluidR3Mono_GM.sf3"];
 
 fn fetch_timgm6mb(assets_dir: &Path) -> Result<(), String> {
     fetch_with_mirrors("TimGM6mb.sf2", TIMGM6MB_MIRRORS, assets_dir)
