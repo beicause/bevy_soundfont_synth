@@ -13,7 +13,6 @@
 //! * The audio context ([`FirewheelContext`] + [`CpalStream`]) is a `NonSend`
 //!   resource.
 
-use std::collections::VecDeque;
 use std::sync::Arc;
 
 use bevy_app::{App, Last, Plugin, Update};
@@ -81,7 +80,7 @@ pub struct MidiSynthEngine {
     /// Maximum polyphony per synthesizer node.
     polyphony: usize,
     /// Commands to flush to the audio thread on the next tick.
-    pending: VecDeque<(NodeID, Option<EventInstant>, SynthMsg)>,
+    pending: Vec<(NodeID, Option<EventInstant>, SynthMsg)>,
     /// Immediate MIDI events buffered by the observer.
     live: Vec<(Entity, MidiMessage)>,
     /// Set once the stream fails to start (or later reports an error).
@@ -104,7 +103,7 @@ impl MidiSynthEngine {
             cx: None,
             config,
             polyphony: 64,
-            pending: VecDeque::new(),
+            pending: Vec::new(),
             live: Vec::new(),
             error: None,
             error_logged: false,
@@ -187,7 +186,7 @@ impl MidiSynthEngine {
     /// Queue a message for a node, either immediately or at an absolute
     /// audio-clock instant.
     pub(crate) fn enqueue(&mut self, node: NodeID, time: Option<EventInstant>, msg: SynthMsg) {
-        self.pending.push_back((node, time, msg));
+        self.pending.push((node, time, msg));
     }
 
     /// Whether the audio stream is running.

@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>bevy_soundfont_synth — web demo</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        background: #101418;
+        color: #d7dde4;
+        font-family: system-ui, sans-serif;
+        text-align: center;
+        padding: 1rem;
+        box-sizing: border-box;
+      }
+      h1 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin: 0;
+      }
+      #start {
+        cursor: pointer;
+        border: 1px solid #3b4654;
+        border-radius: 999px;
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+        background: #1a222b;
+        color: #d7dde4;
+      }
+      #start:hover {
+        background: #232d39;
+      }
+      #status {
+        min-height: 1.2rem;
+        font-size: 0.9rem;
+        color: #8b98a5;
+      }
+      #error {
+        color: #ff8484;
+        white-space: pre-wrap;
+        max-width: 40rem;
+      }
+      footer {
+        position: fixed;
+        bottom: 0.75rem;
+        left: 0;
+        right: 0;
+        font-size: 0.75rem;
+        color: #5c6773;
+      }
+      footer a {
+        color: #7d8a97;
+      }
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>bevy_soundfont_synth demo</h1>
+    <p style="max-width: 32rem; margin: 0">
+      Plays immediate MIDI events, a timed event sequence, and MIDI file
+      playback through a firewheel + rustysynth audio graph. Logs go to the
+      browser console (F12).
+    </p>
+    <button id="start" type="button">🔊 Click / tap / press any key to start</button>
+    <p id="status">WebAudio needs a user gesture — nothing plays until you interact.</p>
+    <p id="error" class="hidden"></p>
+    <footer>
+      “Only Time.mid” from the
+      <a href="https://colinraffel.com/projects/lmd/">Lakh MIDI Dataset</a>
+      (CC-BY 4.0) — see <code>Only Time.mid.license</code>.
+    </footer>
+    <script type="module">
+      import init from "./demo.js";
+
+      const start = document.getElementById("start");
+      const status = document.getElementById("status");
+      const error = document.getElementById("error");
+      let started = false;
+
+      // The first user gesture both starts the wasm app and (via the app's
+      // lazily created cpal WebAudio stream) unlocks the AudioContext.
+      async function run() {
+        if (started) return;
+        started = true;
+        start.classList.add("hidden");
+        status.textContent = "Loading demo…";
+        try {
+          await init();
+          status.textContent =
+            "Running — audio starts once the soundfonts finish loading. " +
+            "Open the browser console (F12) for demo logs.";
+        } catch (err) {
+          console.error(err);
+          status.textContent = "";
+          error.textContent = "Failed to start the demo: " + err;
+          error.classList.remove("hidden");
+          started = false;
+          start.classList.remove("hidden");
+        }
+      }
+
+      start.addEventListener("click", run);
+      window.addEventListener("keydown", run);
+      window.addEventListener("pointerdown", run);
+    </script>
+  </body>
+</html>

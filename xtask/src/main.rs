@@ -6,10 +6,14 @@
 //! * `generate-demo-midi` — writes the demo MIDI file `assets/demo_generated.mid`.
 //!   Sources are the same verified files used by the upstream rustysynth fork
 //!   (<https://github.com/beicause/rustysynth>).
+//! * `build-web`          — builds `examples/demo` for `wasm32-unknown-unknown`,
+//!   runs `wasm-bindgen --target web` on it and assembles the deployable static
+//!   site (glue + wasm + `index.html` + `assets/`) into `web-dist/`.
 
 use std::fs;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 use std::time::Duration;
 
 fn repo_root() -> PathBuf {
@@ -149,8 +153,99 @@ fn usage() {
     eprintln!(
         "Usage: cargo xtask <task>\n\nTasks:\n  \
          fetch-fonts        download the SoundFont banks into assets/\n  \
-         generate-demo-midi write assets/demo_generated.mid for examples/demo.rs"
+         generate-demo-midi write assets/demo_generated.mid for examples/demo.rs\n  \
+         build-web [--release]\n                     \
+         build examples/demo for the web into web-dist/"
     );
+}
+
+// --- build-web ----------------------------------------------------------------
+
+/// Assets the web demo needs at its served `assets/` root, with the xtask task
+/// that produces them (for the error message when one is missing).
+const WEB_DEMO_ASSETS: &[(&str, &str)] = &[
+    ("TimGM6mb.sf2", "fetch-fonts"),
+    ("FluidR3Mono_GM.sf3", "fetch-fonts"),
+    ("demo_generated.mid", "generate-demo-midi"),
+    ("Only Time.mid", "(ships with the repo)"),
+];
+
+/// Run a command, inheriting stdio; returns an error string on failure.
+fn run(command: &mut Command) -> Result<(), String> {
+    println!("running: {command:?}");
+    command
+        .status()
+        .map_err(|err| format!("failed to spawn {:?}: {err}", command.get_program()))
+        .and_then(|status| {
+            if status.success() {
+                Ok(())
+            } else {
+                Err(format!("{command:?} exited with {status}"))
+            }
+        })
+}
+
+/// Build `examples/demo` for wasm, bindgen it and assemble `web-dist/`.
+fn build_web(release: bool) -> Result<(), String> {
+    let root = repo_root();
+    let profile = if release { "release" } else { "debug" };
+
+    for (name, source) in WEB_DEMO_ASSETS {
+        if !root.join("assets").join(name).is_file() {
+            return Err(format!(
+                "assets/{name} is missing — run `cargo xtask {source}` first"
+            ));
+        }
+    }
+
+    run(Command::new("cargo")
+        .args([
+            "build",
+            "--target",
+            "wasm32-unknown-unknown",
+            "--example",
+            "demo",
+        ])
+        .arg(if release { "--release" } else { "--quiet" })
+        .current_dir(&root))?;
+
+    let dist = root.join("web-dist");
+    let wasm = root.join(format!(
+        "target/wasm32-unknown-unknown/{profile}/examples/demo.wasm"
+    ));
+
+    // Start from a clean dist so stale files never survive a rebuild.
+    fs::remove_dir_all(&dist).ok();
+    fs::create_dir_all(&dist).map_err(|err| err.to_string())?;
+
+    run(Command::new("wasm-bindgen")
+        .args(["--target", "web", "--no-typescript", "--out-dir"])
+        .arg(&dist)
+        .arg(&wasm)
+        .current_dir(&root))
+    .map_err(|err| {
+        format!("{err}\n  (install the CLI with: cargo install wasm-bindgen-cli --locked)")
+    })?;
+
+    fs::create_dir_all(dist.join("assets")).map_err(|err| err.to_string())?;
+    fs::copy(
+        root.join("examples/web/index.html"),
+        dist.join("index.html"),
+    )
+    .map_err(|err| err.to_string())?;
+    for (name, _) in WEB_DEMO_ASSETS {
+        fs::copy(
+            root.join("assets").join(name),
+            dist.join("assets").join(name),
+        )
+        .map_err(|err| err.to_string())?;
+    }
+
+    println!(
+        "done: web demo in {} — serve it statically, e.g. `python3 -m http.server -d web-dist`",
+        dist.display()
+    );
+    Ok(())
 }
 
 fn main() {
@@ -205,6 +300,16 @@ fn main() {
                         eprintln!("error: {err}");
                         1
                     }
+                }
+            }
+        }
+        Some("build-web") => {
+            let release = std::env::args().any(|arg| arg == "--release");
+            match build_web(release) {
+                Ok(()) => 0,
+                Err(err) => {
+                    eprintln!("error: {err}");
+                    1
                 }
             }
         }

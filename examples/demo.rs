@@ -19,14 +19,31 @@
 //!
 //! Then run: `cargo run --example demo` (requires an audio device). Volume
 //! uses the plugin defaults (`Volume::UNITY_GAIN`).
+//!
+//! # Web
+//!
+//! The demo also runs on `wasm32-unknown-unknown`. Build and assemble the
+//! static site into `web-dist/` with:
+//!
+//! ```text
+//! cargo xtask build-web          # add --release for an optimized build
+//! ```
+//!
+//! then serve it with any static file server, e.g.
+//! `python3 -m http.server -d web-dist`, and open the page. Browsers only
+//! allow WebAudio to start after a user gesture, so the page waits for a
+//! click/keypress before starting the app. CI deploys the same site to GitHub
+//! Pages on every push to `master` (see `.github/workflows/web.yml`).
 
 use std::time::Duration;
 
-use bevy_app::{App, ScheduleRunnerPlugin, Startup, TaskPoolPlugin, Update};
+use bevy_app::{App, PanicHandlerPlugin, ScheduleRunnerPlugin, Startup, TaskPoolPlugin, Update};
 use bevy_asset::{AssetPlugin, AssetServer, Handle};
 use bevy_ecs::observer::On;
 use bevy_ecs::prelude::*;
-use bevy_log::{LogPlugin, info, warn};
+#[cfg(not(target_arch = "wasm32"))]
+use bevy_log::warn;
+use bevy_log::{LogPlugin, info};
 use bevy_soundfont_synth::{
     MidiEvent, MidiEventKind, MidiPlaybackFinished, MidiPlaybackRestarted, MidiPlaybackSettings,
     MidiPlayer, MidiSoundFont, SoundFontAsset, SoundFontSynthPlugin, TimedMidiEvent,
@@ -34,6 +51,34 @@ use bevy_soundfont_synth::{
 use bevy_time::TimePlugin;
 
 fn main() {
+    #[cfg(not(target_arch = "wasm32"))]
+    warn_missing_assets();
+
+    App::new()
+        .add_plugins(ScheduleRunnerPlugin::run_loop(Duration::from_millis(16)))
+        .add_plugins((
+            LogPlugin::default(),
+            TaskPoolPlugin::default(),
+            // On web this installs `console_error_panic_hook` (through the
+            // `bevy_app/web` feature) so Rust panics show in the devtools
+            // console instead of an opaque trap; native targets are unaffected.
+            PanicHandlerPlugin,
+            AssetPlugin::default(),
+            TimePlugin,
+        ))
+        .add_plugins(SoundFontSynthPlugin::default())
+        .init_resource::<Demo>()
+        .add_systems(Startup, setup)
+        .add_systems(Update, demo_timeline)
+        .add_observer(on_file_finished)
+        .add_observer(on_file_restarted)
+        .run();
+}
+
+/// On native targets the demo assets are read from `assets/` relative to the
+/// crate root; warn about the ones that still need to be fetched/generated.
+#[cfg(not(target_arch = "wasm32"))]
+fn warn_missing_assets() {
     let asset_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("assets");
     if !asset_dir.join("TimGM6mb.sf2").exists() {
         warn!("assets/TimGM6mb.sf2 not found — run `cargo xtask fetch-fonts` first");
@@ -47,22 +92,6 @@ fn main() {
     if !asset_dir.join("Only Time.mid").exists() {
         warn!("assets/Only Time.mid not found — the demo will stay silent after the 3rd demo loop");
     }
-
-    App::new()
-        .add_plugins(ScheduleRunnerPlugin::run_loop(Duration::from_millis(16)))
-        .add_plugins((
-            LogPlugin::default(),
-            TaskPoolPlugin::default(),
-            AssetPlugin::default(),
-            TimePlugin,
-        ))
-        .add_plugins(SoundFontSynthPlugin::default())
-        .init_resource::<Demo>()
-        .add_systems(Startup, setup)
-        .add_systems(Update, demo_timeline)
-        .add_observer(on_file_finished)
-        .add_observer(on_file_restarted)
-        .run();
 }
 
 #[derive(Resource, Default)]

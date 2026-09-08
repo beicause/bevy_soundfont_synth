@@ -1,5 +1,7 @@
 /target
 .cargo-home/
+# Build output of `cargo xtask build-web` (deployed to GitHub Pages by CI).
+web-dist/
 # Local rustysynth fork: dev-only convenience, not part of the repo.
 # (Cargo.toml references it with a path dependency; install it separately.)
 rustysynth/

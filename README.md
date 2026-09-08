@@ -107,6 +107,28 @@ cargo xtask fetch-fonts   # downloads assets/TimGM6mb.sf2
 sources are the same mirrors the upstream rustysynth project verifies.
 Alternatively, drop any soundfont you have into `assets/` and load it by path.
 
+## Web demo
+
+`examples/demo` also builds for `wasm32-unknown-unknown`, and CI deploys it to
+**GitHub Pages** on every push to `master`
+(`.github/workflows/web.yml`): <https://beicause.github.io/bevy_soundfont_synth/>
+
+To build it locally, install the `wasm-bindgen` CLI
+(`cargo install wasm-bindgen-cli --locked`), then:
+
+```sh
+cargo xtask fetch-fonts
+cargo xtask generate-demo-midi
+cargo xtask build-web              # add --release for an optimized build
+python3 -m http.server -d web-dist # or any other static file server
+```
+
+and open <http://localhost:8000>. Browsers only allow WebAudio to start after
+a user gesture, so click/tap/press a key on the page to start the demo;
+`bevy_log` output goes to the browser console. `cargo xtask build-web`
+assembles the deployable static site (glue + wasm + `examples/web/index.html`
++ `assets/`) into `web-dist/`.
+
 ## Architecture
 
 ```
