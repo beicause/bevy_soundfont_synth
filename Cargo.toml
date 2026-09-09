@@ -30,7 +30,7 @@ bevy_tasks = { version = "0.19.1", default-features = false, features = ["async_
 bevy_time = { version = "0.19.1", default-features = false, features = ["std"] }
 
 firewheel = { version = "0.14.0", default-features = false, features = ["cpal", "scheduled_events", "std"] }
-rustysynth-ext = { package = "rustysynth-ext", git = "https://github.com/beicause/rustysynth", branch = "main", features = ["sf3"] }
+rustysynth-ext = { package = "rustysynth-ext", version = "1.5.0-alpha.1", features = ["sf3"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 bevy_app = { version = "0.19.1", default-features = false, features = ["web"] }
