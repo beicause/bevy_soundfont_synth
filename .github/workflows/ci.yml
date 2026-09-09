@@ -29,17 +29,20 @@ jobs:
       - name: Check for typos
         uses: crate-ci/typos@v1.48.0
 
-      - name: Check formatting
-        run: cargo fmt --all -- --check
-
       - name: Install tombi
         uses: tombi-toml/setup-tombi@v1.4
 
       - name: Check for tombi
         run: tombi lint --error-on-warnings; tombi format --check --diff
 
+      - name: Install rust toolchain
+        run: |
+          rustup toolchain install stable --no-self-update --profile=minimal
+
+      - name: Check rust formatting
+        run: cargo fmt --all -- --check
+
   build:
-    needs: lint
     name: Build ${{matrix.os}}
     # runtime is normally 2 minutes
     timeout-minutes: 8
@@ -100,7 +103,6 @@ jobs:
           RUSTDOCFLAGS: -D warnings
 
   build-wasm:
-    needs: lint
     name: Build wasm
     # runtime is normally 30 seconds
     timeout-minutes: 5
@@ -143,7 +145,6 @@ jobs:
         run: cargo build --target wasm32-unknown-unknown -p bevy_soundfont_synth --all-targets --all-features
 
   build-android:
-    needs: lint
     name: Build android
     # runtime is normally 30 seconds
     timeout-minutes: 5
