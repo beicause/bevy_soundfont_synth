@@ -15,7 +15,7 @@
 
 use std::sync::Arc;
 
-use bevy_ecs::prelude::Component;
+use bevy::ecs::prelude::Component;
 use rustysynth_ext::{MidiFile, MidiMessage};
 
 /// A due event: the message to dispatch and the absolute audio-clock instant

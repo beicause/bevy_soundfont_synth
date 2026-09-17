@@ -1,7 +1,7 @@
 //! Entity events and messages for the synth plugin.
 //!
 //! Bevy 0.19 splits the old "event" API into two:
-//! - [`Event`](bevy_ecs::event::Event) + [`EntityEvent`]: observer-driven
+//! - [`Event`](bevy::ecs::event::Event) + [`EntityEvent`]: observer-driven
 //!   triggers (no queue).
 //! - [`Message`]: queued data read by systems through `MessageWriter` /
 //!   `MessageReader`.
@@ -20,10 +20,10 @@
 //! The only [`Message`] left is [`MidiStreamError`] — a stream-level
 //! notification that belongs to no entity.
 
-use bevy_ecs::entity::Entity;
-use bevy_ecs::event::EntityEvent;
-use bevy_ecs::message::Message;
-use bevy_ecs::system::EntityCommands;
+use bevy::ecs::entity::Entity;
+use bevy::ecs::event::EntityEvent;
+use bevy::ecs::message::Message;
+use bevy::ecs::system::EntityCommands;
 
 pub use crate::midi::MidiEventKind;
 
@@ -48,7 +48,7 @@ pub use crate::midi::MidiEventKind;
 /// Trigger it on the target entity:
 ///
 /// ```
-/// # use bevy_ecs::prelude::*;
+/// # use bevy::ecs::prelude::*;
 /// # use bevy_soundfont_synth::events::{TimedMidiEvent, MidiEventKind};
 /// fn echo(mut commands: Commands, target: Entity) {
 ///     // A note-off half a second after the matching note-on was triggered:
@@ -85,7 +85,7 @@ impl TimedMidiEvent {
 /// methods.
 ///
 /// ```
-/// # use bevy_ecs::prelude::*;
+/// # use bevy::ecs::prelude::*;
 /// # use bevy_soundfont_synth::events::{MidiEntityCommandsExt, MidiEventKind};
 /// fn flourish(mut commands: Commands, synth: Entity) {
 ///     commands
@@ -122,8 +122,8 @@ impl MidiEntityCommandsExt for EntityCommands<'_> {
 /// Observe it to react to loops (e.g. print the loop count):
 ///
 /// ```
-/// # use bevy_ecs::prelude::*;
-/// # use bevy_ecs::observer::On;
+/// # use bevy::ecs::prelude::*;
+/// # use bevy::ecs::observer::On;
 /// # use bevy_soundfont_synth::events::MidiPlaybackRestarted;
 /// fn on_restart(event: On<MidiPlaybackRestarted>) {
 ///     println!("looped {} times", event.loop_count);
@@ -175,8 +175,8 @@ pub struct MidiStreamError(pub String);
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bevy_ecs::observer::On;
-    use bevy_ecs::prelude::*;
+    use bevy::ecs::observer::On;
+    use bevy::ecs::prelude::*;
 
     #[derive(Resource, Default)]
     struct Counts {

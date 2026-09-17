@@ -9,11 +9,11 @@
 use std::io::Cursor;
 use std::sync::Arc;
 
-use bevy_asset::io::Reader;
-use bevy_asset::{Asset, AssetLoader, LoadContext};
-use bevy_ecs::error::{BevyError, Severity};
-use bevy_reflect::TypePath;
-use bevy_tasks::ConditionalSendFuture;
+use bevy::asset::io::Reader;
+use bevy::asset::{Asset, AssetLoader, LoadContext};
+use bevy::ecs::error::{BevyError, Severity};
+use bevy::reflect::TypePath;
+use bevy::tasks::ConditionalSendFuture;
 use rustysynth_ext::{MidiFile, SoundFont};
 
 /// A parsed SoundFont bank (SF2 or SF3).

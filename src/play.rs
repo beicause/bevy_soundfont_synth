@@ -1,5 +1,5 @@
 //! Data-driven playback components (requirements 2 and 3), mirroring
-//! `bevy_audio::AudioPlayer` + `bevy_audio::PlaybackSettings`.
+//! `bevy::audio::AudioPlayer` + `bevy::audio::PlaybackSettings`.
 //!
 //! Every playable source implements the [`MidiSource`] trait and resolves to a
 //! shared `Arc<MidiFile>`; the engine then plays all of them through the exact
@@ -17,8 +17,8 @@
 //! `#[require]`):
 //!
 //! ```
-//! # use bevy_asset::Handle;
-//! # use bevy_ecs::prelude::*;
+//! # use bevy::asset::Handle;
+//! # use bevy::ecs::prelude::*;
 //! # use bevy_soundfont_synth::assets::{MidiFileAsset, SoundFontAsset};
 //! # use bevy_soundfont_synth::play::{MidiPlayer, MidiPlaybackSettings, MidiSoundFont};
 //! # fn example(mut commands: Commands) {
@@ -40,8 +40,8 @@
 
 use std::sync::Arc;
 
-use bevy_asset::{Assets, Handle};
-use bevy_ecs::prelude::Component;
+use bevy::asset::{Assets, Handle};
+use bevy::ecs::prelude::Component;
 use firewheel::Volume;
 use rustysynth_ext::MidiFile;
 
@@ -57,8 +57,8 @@ use crate::midi::{SequenceMidiEvent, build_midi_file};
 /// and [`MidiPlayer`] sources play through it.
 ///
 /// ```
-/// # use bevy_asset::Handle;
-/// # use bevy_ecs::prelude::*;
+/// # use bevy::asset::Handle;
+/// # use bevy::ecs::prelude::*;
 /// # use bevy_soundfont_synth::assets::SoundFontAsset;
 /// # use bevy_soundfont_synth::play::MidiSoundFont;
 /// # fn example(mut commands: Commands) {
@@ -119,7 +119,7 @@ pub enum MidiResolveError {
 
 /// The playback source component (requirements 2 and 3).
 ///
-/// Mirrors `bevy_audio::AudioPlayer`: spawn it on an entity that also has a
+/// Mirrors `bevy::audio::AudioPlayer`: spawn it on an entity that also has a
 /// [`MidiSoundFont`] (optionally with [`MidiPlaybackSettings`]) and the engine
 /// starts playback as soon as the source can be resolved.
 #[derive(Component)]
@@ -143,7 +143,7 @@ impl MidiPlayer {
     }
 }
 
-/// Initial playback settings, mirrors `bevy_audio::PlaybackSettings`.
+/// Initial playback settings, mirrors `bevy::audio::PlaybackSettings`.
 ///
 /// `paused`, `speed` and `volume` are applied live when mutated; `mode` is
 /// read when playback finishes (for its `Despawn`/`Remove` behavior).

@@ -15,12 +15,12 @@
 
 use std::sync::Arc;
 
-use bevy_app::{App, Last, Plugin, Update};
-use bevy_asset::{AssetApp, Assets};
-use bevy_ecs::message::MessageWriter;
-use bevy_ecs::observer::On;
-use bevy_ecs::prelude::*;
-use bevy_log::{error, info, warn};
+use bevy::app::{App, Last, Plugin, Update};
+use bevy::asset::{AssetApp, Assets};
+use bevy::ecs::message::MessageWriter;
+use bevy::ecs::observer::On;
+use bevy::ecs::prelude::*;
+use bevy::log::{error, info, warn};
 use firewheel::{
     FirewheelConfig, FirewheelContext,
     clock::EventInstant,
@@ -548,7 +548,7 @@ mod tests {
     use super::*;
     use crate::events::TimedMidiEvent;
     use crate::midi::MidiEventKind;
-    use bevy_asset::Handle;
+    use bevy::asset::Handle;
     use firewheel::clock::{EventInstant, InstantSeconds};
 
     fn note_on(key: u8) -> MidiEventKind {

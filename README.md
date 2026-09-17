@@ -1,6 +1,6 @@
 # bevy_soundfont_synth
 
-A [Bevy](https://bevyengine.org) (0.19) plugin that loads **SoundFont** (SF2/SF3)
+A [Bevy](https://bevyengine.org) plugin that loads **SoundFont** (SF2/SF3)
 and **MIDI** files as assets and plays them through a
 [firewheel](https://github.com/BillyDM/firewheel) audio graph backed by a local
 fork of [rustysynth](https://github.com/beicause/rustysynth) (`rustysynth/`).
@@ -28,7 +28,7 @@ Three ways to produce audio, all unified under one playback scheduler:
   files are polled every frame on the main thread and every due MIDI message is
   scheduled at its absolute audio-clock instant, so notes land exactly on the
   audio thread.
-- **Entity events for immediate messages** (Bevy 0.19 `Event`/`EntityEvent`
+- **Entity events for immediate messages** (Bevy `Event`/`EntityEvent`
   + observer; `world.trigger`-free, triggered on the target entity).
 
 ## Usage
@@ -138,7 +138,7 @@ python3 -m http.server -d web-dist # or any other static file server
 
 and open <http://localhost:8000>. Browsers only allow WebAudio to start after
 a user gesture, so click/tap/press a key on the page to start the demo;
-`bevy_log` output goes to the browser console. `cargo xtask build-web`
+`bevy` log output goes to the browser console. `cargo xtask build-web`
 assembles the deployable static site (glue + wasm + `examples/web/index.html`
 + `assets/`) into `web-dist/`.
 
@@ -190,7 +190,7 @@ Bevy world                                        NonSend MidiSynthEngine
   error.
 - Sequences passed to `MidiPlayer::sequence` are sorted internally; times must
   be non-negative.
-- Requires a host app with `bevy_asset::AssetPlugin` (part of
+- Requires a host app with `bevy::asset::AssetPlugin` (part of
   `DefaultPlugins`); the demo uses `ScheduleRunnerPlugin` + `TaskPoolPlugin` +
   `AssetPlugin` + `TimePlugin`.
 

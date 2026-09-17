@@ -12,9 +12,9 @@
 
 use std::sync::Arc;
 
-use bevy_ecs::lifecycle::HookContext;
-use bevy_ecs::prelude::Component;
-use bevy_ecs::world::DeferredWorld;
+use bevy::ecs::lifecycle::HookContext;
+use bevy::ecs::prelude::Component;
+use bevy::ecs::world::DeferredWorld;
 use firewheel::{
     StreamInfo,
     channel_config::{ChannelConfig, ChannelCount},
@@ -125,7 +125,7 @@ impl AudioNodeProcessor for MidiSynthProcessor {
                     self.synth.set_master_volume(self.volume.amp());
                 }
                 Err(e) => {
-                    bevy_log::error!(
+                    bevy::log::error!(
                         "bevy_soundfont_synth: failed to rebuild synthesizer after stream restart: {e}"
                     );
                 }
@@ -184,7 +184,7 @@ pub struct MidiSynthNode(pub NodeID);
 /// `on_discard` hook: the firewheel node is removed from the graph before the
 /// component value actually disappears. Runs on font replacement and on entity
 /// despawn.
-pub(crate) fn register_node_cleanup_hook(app: &mut bevy_app::App) {
+pub(crate) fn register_node_cleanup_hook(app: &mut bevy::app::App) {
     app.world_mut()
         .register_component_hooks::<MidiSynthNode>()
         .on_discard(node_discard_hook);

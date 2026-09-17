@@ -38,19 +38,19 @@
 
 use std::time::Duration;
 
-use bevy_app::{App, PanicHandlerPlugin, ScheduleRunnerPlugin, Startup, TaskPoolPlugin, Update};
-use bevy_asset::{AssetPlugin, AssetServer, Handle};
-use bevy_ecs::observer::On;
-use bevy_ecs::prelude::*;
+use bevy::app::{App, PanicHandlerPlugin, ScheduleRunnerPlugin, Startup, TaskPoolPlugin, Update};
+use bevy::asset::{AssetPlugin, AssetServer, Handle};
+use bevy::ecs::observer::On;
+use bevy::ecs::prelude::*;
 #[cfg(not(target_arch = "wasm32"))]
-use bevy_log::warn;
-use bevy_log::{LogPlugin, info};
+use bevy::log::warn;
+use bevy::log::{LogPlugin, info};
+use bevy::time::TimePlugin;
 use bevy_soundfont_synth::{
     MidiEntityCommandsExt, MidiEventKind, MidiPlaybackFinished, MidiPlaybackRestarted,
     MidiPlaybackSettings, MidiPlayer, MidiSoundFont, SequenceMidiEvent, SoundFontAsset,
     SoundFontSynthPlugin,
 };
-use bevy_time::TimePlugin;
 
 fn main() {
     #[cfg(not(target_arch = "wasm32"))]
@@ -62,7 +62,7 @@ fn main() {
             LogPlugin::default(),
             TaskPoolPlugin::default(),
             // On web this installs `console_error_panic_hook` (through the
-            // `bevy_app/web` feature) so Rust panics show in the devtools
+            // `bevy` crate's `web` feature) so Rust panics show in the devtools
             // console instead of an opaque trap; native targets are unaffected.
             PanicHandlerPlugin,
             AssetPlugin::default(),
@@ -125,7 +125,7 @@ fn setup(mut commands: Commands, server: Res<AssetServer>, mut demo: ResMut<Demo
 fn demo_timeline(
     mut commands: Commands,
     server: Res<AssetServer>,
-    time: Res<bevy_time::Time>,
+    time: Res<bevy::time::Time>,
     mut demo: ResMut<Demo>,
 ) {
     let t = time.elapsed_secs();

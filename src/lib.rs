@@ -6,7 +6,7 @@
 //! Three ways to produce audio:
 //!
 //! 1. **MIDI events** — a [`TimedMidiEvent`]
-//!    [`EntityEvent`](bevy_ecs::event::EntityEvent) triggered *on* a synth
+//!    [`EntityEvent`](bevy::ecs::event::EntityEvent) triggered *on* a synth
 //!    entity (an entity with a [`MidiSoundFont`]); `seconds` is a relative
 //!    delay from the audio clock at trigger time (0 = immediate),
 //!    sample-accurate:

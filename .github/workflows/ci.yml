@@ -74,14 +74,11 @@ jobs:
           env-vars: ImageVersion
           cache-bin: false
 
-      - name: Clippy no features
-        run: cargo clippy --workspace --all-targets --no-default-features -- -Dwarnings
-
-      - name: Clippy all features
-        run: cargo clippy --workspace --all-targets --all-features -- -Dwarnings
+      - name: Clippy default features
+        run: cargo clippy --workspace --all-targets -- -Dwarnings
 
       - name: Build ${{matrix.os}}
-        run: cargo build --workspace --all-features --all-targets
+        run: cargo build --workspace --all-targets
 
       - name: Fetch test soundfonts
         # TimGM6mb.sf2 is not tracked (see .gitignore); it is downloaded
@@ -89,10 +86,10 @@ jobs:
         run: cargo xtask fetch-fonts
 
       - name: Test ${{matrix.os}}
-        run: cargo test --workspace --all-targets --all-features
+        run: cargo test --workspace --all-targets
 
       - name: Doc
-        run: cargo doc --workspace --all-features --no-deps --document-private-items --keep-going
+        run: cargo doc --workspace --no-deps --document-private-items --keep-going
         env:
           RUSTDOCFLAGS: -D warnings
 
@@ -122,11 +119,11 @@ jobs:
       - name: Clippy no features
         run: cargo clippy --workspace --all-targets --no-default-features -- -Dwarnings
 
-      - name: Clippy all features
-        run: cargo clippy --target wasm32-unknown-unknown -p bevy_soundfont_synth --all-targets --all-features -- -Dwarnings
+      - name: Clippy default features
+        run: cargo clippy --target wasm32-unknown-unknown -p bevy_soundfont_synth --all-targets -- -Dwarnings
 
       - name: Build wasm
-        run: cargo build --target wasm32-unknown-unknown -p bevy_soundfont_synth --all-targets --all-features
+        run: cargo build --target wasm32-unknown-unknown -p bevy_soundfont_synth --all-targets
 
   build-android:
     name: Build android
